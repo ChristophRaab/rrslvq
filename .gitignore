@@ -1,0 +1,7 @@
+.ipynb_checkpoints/*.ipynb
+datasets/*
+__pychache__/
+.vscode
+.idea
+datasets/elec.csv
+datasets/poker.csv
