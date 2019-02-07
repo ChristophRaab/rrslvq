@@ -1,6 +1,5 @@
-# RRSLVQ
-Source code of Reactive Robust Learning Vector Quantization
+# Reactive Soft Prototype Computing for frequent reoccurring Concept Drift
+Python Source Code
 
-For a working demo SciKit-Mulitflow must be installed. 
+Execute demo with python rrslvq.py
 
-# Start rrslvq.py for demo
