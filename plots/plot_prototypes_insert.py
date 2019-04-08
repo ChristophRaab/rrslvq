@@ -2,57 +2,46 @@ from __future__ import division
 
 import math
 import sys
+from random import randint
 from random import random as rnd
 
+
+from bix.data.reoccuringdriftstream import ReoccuringDriftStream
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+from scipy.spatial.distance import cdist
+from scipy.special import logit
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import validation
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
-from random import randint
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.optimize import minimize
-from scipy.spatial.distance import cdist
-from kswin import KSWIN
-from ReoccuringDriftStream import ReoccuringDriftStream 
+
+from bix.detectors.kswin import KSWIN
+from skmultiflow.core.base import StreamModel
 
 
-try:
-    from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
-    from skmultiflow.core.base import StreamModel
-    from skmultiflow.core.pipeline import Pipeline
+from skmultiflow.data.mixed_generator import MIXEDGenerator
 
-    from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
-    from skmultiflow.lazy.knn import KNN
+#Abrupt Concept Drift Generators
+from skmultiflow.drift_detection.adwin import ADWIN
+from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
+from bix.classifiers.rrslvq import RRSLVQ
 
-    #Abrupt Concept Drift Generators
-    from skmultiflow.data.stagger_generator import STAGGERGenerator
-    from skmultiflow.data.mixed_generator import MIXEDGenerator
-    from skmultiflow.data.sea_generator import SEAGenerator
-    from skmultiflow.data.sine_generator import SineGenerator
 
-    # Incremental Concept Drift Generators
-    from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
 
-    # No Concept Drift Generators
-    from skmultiflow.data.random_rbf_generator import RandomRBFGenerator
 
-except Error:
-    print("Failed to import SciKit-Multiflow!")
 
-    
 #!sr/bin/env python3
 #-*- coding: utf-8 -*-
 """
 Created on Fri Jun 22 09:35:11 2018
 
-@author: christoph raab
+@author: moritz
 """
 
-# original source code from https://github.com/MrNuggelz/sklearn-lvq)
+# TODO: add sigma for every prototype (TODO from https://github.com/MrNuggelz/sklearn-lvq)
 
 
 class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
@@ -107,7 +96,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                  sigma=1.0, max_iter=2500, gtol=1e-5,
                  display=False, random_state=None,drift_handling = "KS",confidence=0.05,replace = True):
         self.sigma = sigma
-        
+        self.confidence = confidence
         self.random_state = random_state
         self.initial_prototypes = initial_prototypes
         self.prototypes_per_class = prototypes_per_class
@@ -115,6 +104,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
         self.max_iter = max_iter
         self.gtol = gtol
         self.initial_fit = True
+        self.max_class_distances = None
         self.classes_ = []
         self.counter = 0
         self.cd_detects = []
@@ -124,7 +114,6 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
         self.init_drift_detection = True
         self.some = []
         self.bg_data = [[],[]]
-        self.confidence = confidence
         if not isinstance(self.display, bool):
             raise ValueError("display must be a boolean")
         if not isinstance(self.max_iter, int) or self.max_iter < 1:
@@ -164,7 +153,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                 c_xi = y[i]
                 for j in range(prototypes.shape[0]):
                     d = (xi - prototypes[j])
-                    c = 1/ self.sigma
+                    c = 0.5
                     if self.c_w_[j] == c_xi:
                         # Attract prototype to data point
                         self.w_[j] += c * (self._p(j, xi, prototypes=self.w_, y=c_xi) -
@@ -398,14 +387,19 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
             X, y, random_state = self._validate_train_parms(
                 X, y, classes=classes)
         else:
-            raise ValueError('Class {} was not learned - please declare all classes in first call of fit/partial_fit'.format(y))
+            raise ValueError('Class {} was not learned - please declare all \
+                             classes in first call of fit/partial_fit'.format(y))
 
         self.counter = self.counter + 1
         if self.drift_handling is not None and self.concept_drift_detection(X,y):
             self.cd_handling(X,y)
+            if self.counter > 30:
+                self.save_data(X,y,random_state)
             self.cd_detects.append(self.counter)
-            #print(self.w_.shape)
+            print(self.w_.shape)
         
+        
+
         self._optimize(X, y, random_state)    
         return self
 
@@ -460,8 +454,9 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
     def cd_handling(self,X,Y):
         if self.replace:
             labels = np.concatenate([np.repeat(l,self.prototypes_per_class) for l in self.classes_])        
-            new_prototypes = np.repeat(np.array([self.geometric_median(np.array([detector.window[-30:] for detector in self.cdd]).T)]),len(labels),axis=0)
-            # new_prototypes = np.array([np.mean(np.array([detector.window[-30:] for detector in self.cdd]),axis=1) for l in labels]) 
+            #new_prototypes = np.array([np.mean(np.array([detector.window[-30:] for detector in self.cdd]),axis=1) for l in labels]) 
+            new_prototypes = np.array([self.geometric_median(np.array([detector.window[-30:] for detector in self.cdd]).T) for l in labels])
+
             self.w_ = new_prototypes
             self.c_w_ = labels
             if type(self.initial_prototypes) == np.ndarray:
@@ -506,22 +501,63 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
         return optimize_result.x   
 
 if __name__ == "__main__":
-    #DEMO SCRIPT
+    
     s1 = MIXEDGenerator(classification_function = 1, random_state= 112, balance_classes = False)
     s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
 
-
-    stream = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=1)   
+    """1. Create stream"""
+    stream = ReoccuringDriftStream(stream=s1,
+                            drift_stream=s2,
+                            random_state=None,
+                            alpha=90.0, # angle of change grade 0 - 90
+                            position=2000,
+                            width=1)
     stream.prepare_for_use()
+    rrslvq = RRSLVQ(prototypes_per_class=4,drift_handling="KS",sigma=12,confidence=0.1)    
+  
+    model_names = ["rrslvq"]
 
+    evaluator = EvaluatePrequential(show_plot=False,max_samples=5000, 
+    restart_stream=True,batch_size=30,metrics=['kappa', 'kappa_m', 'accuracy']) 
 
-    rrslvq = RRSLVQ(prototypes_per_class=4,drift_handling="KS",sigma=12)    
-    oza = OzaBaggingAdwin(base_estimator=KNN(), n_estimators=2)
-
-    pipe = Pipeline([('Classifier', oza)])
+    evaluator.evaluate(stream=stream, model=rrslvq,model_names=model_names)
     
-    evaluator = EvaluatePrequential(show_plot=True,max_samples=10000, 
-    restart_stream=True,batch_size=10,metrics=[ 'accuracy', 'kappa', 'kappa_m']) 
+    p1 = pd.read_csv("Prototypes.csv",index_col=0).values
+    p1l = pd.read_csv("Prototype_Labels.csv",index_col=0).values[:,0]
+    p2 = pd.read_csv("Prototypes1.csv",index_col=0).values
+    p2l = pd.read_csv("Prototype_Labels1.csv",index_col=0).values[:,0]
 
-    evaluator.evaluate(stream=stream, model=[pipe, rrslvq],model_names=["oza","rrslvq"])
+    X = pd.read_csv("data.csv",index_col=0).values
+    y = pd.read_csv("labels.csv",index_col=0).values[:,0]
+
+    idx1 =  [-2,-3]
+    idx2 =  [-1,-4]
+
+
+i = 1 
+for x,z in zip(idx1,idx2):
+    plt.figure(i)
+    i = i +1
+    fig, ax = plt.subplots()
+    ax.set_title('Insert as Mean')
+    ax.set_xlabel('$x_1$')
+    ax.set_ylabel('$x_2$')
+    red, = plt.plot(p1[:,x],p1[:,z],'ro')
+    brown, = plt.plot(X[y==0][:,x],X[y==0][:,z],'bx')
+    green,= plt.plot(X[y==1][:,x],X[y==1][:,z],'gx')
+    plt.legend([brown, green,red], ["Class 1", "Class 2","Prototypes"])
+    ax.set_title('Insert Step')
     
+    plt.figure(i)
+    i = i +1
+    fig, ax = plt.subplots()
+    ax.set_title('Optimization step')
+    ax.set_xlabel('$x_1$')
+    ax.set_ylabel('$x_2$')
+    brown, = plt.plot(X[y==0][:,x],X[y==0][:,z],'bx')
+    green, plt.plot(X[y==1][:,x],X[y==1][:,z],'gx')
+    brown_prot, = plt.plot(p2[p2l==0][:,x],p2[p2l==0][:,z],'bo')
+    green_prot, = plt.plot(p2[p2l==1][:,x],p2[p2l==1][:,z],'go')
+    plt.legend([brown, green,brown_prot,green_prot], ["Class 1", "Class 2","Prototypes Class 1","Prototypes Class 2"])
+
+plt.show()
