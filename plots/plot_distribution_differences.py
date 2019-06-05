@@ -1,37 +1,61 @@
-import numpy as np 
+import numpy as np
 import matplotlib.pyplot as plt
-from scipy import stats
-import matplotlib.patches as mpatches
+import scipy.stats as st
+from sklearn.datasets.samples_generator import make_blobs
 
-import matplotlib.lines as mlines
-w_size = 30
-p = 0.001
-mean = 0
-
-X = np.random.normal(size=(w_size,2))
-
-alpha = [1,1]
-
-while all(a > p  for a in alpha):
-    mean = mean + 0.01
-    Y = np.random.normal(loc=mean,size=(w_size,2)) 
-    #Y = np.random.binomial(1,0.5,(w_size,2)) 
-    alpha = [stats.ks_2samp(x,y).pvalue for x,y in zip(X.T,Y.T)]
-
-print("Difference in mean:"+str(abs(mean-0)))
+n_components = 4
+# X, truth = make_blobs(n_samples=400, centers=n_components, 
+#                       cluster_std = 2 ,
+#                       random_state=42)
 
 
-fig, ax = plt.subplots()
-red, = plt.plot(X[:,0],X[:,1],'ro')
-mean = np.mean(X,axis=0)
-black, = plt.plot(mean[0],mean[1],"bx")
-mean = np.mean(Y,axis=0)
-yellow, = plt.plot(mean[0],mean[1],"yx")
-green, = plt.plot(Y[:,0],Y[:,1],'go')
-plt.legend([red, green,black,yellow], ["Old Concept", "New Concept","Mean Old","Mean New"])
-ax.set_title('Concept Comparison')
-ax.set_xlabel('$x_1$')
-ax.set_ylabel('$x_2$')
+X = np.array([]).reshape(0,2)
+C = np.array([])
+i = 1
+for n in range(n_components):
+    x = np.random.randn(100,2)+i*3
+    X = np.append(X,x,axis=0)
+    C = np.append(C,np.ones(100)*i)
+    i=i+1
 
+x = X[:, 0]
+y = X[:, 1]
+plt.scatter(X[:, 0], X[:, 1], s=50, c = C)
+plt.title(f"Example of a mixture of {n_components} distributions")
+plt.xlabel("x") 
+plt.ylabel("y");
 plt.show()
+# Extract x and y
+# Define the borders
+deltaX = (max(x) - min(x))/10
+deltaY = (max(y) - min(y))/10
 
+xmin = min(x) - deltaX
+xmax = max(x) + deltaX
+
+ymin = min(y) - deltaY
+ymax = max(y) + deltaY
+
+print(xmin, xmax, ymin, ymax)
+
+# Create meshgrid
+xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+
+positions = np.vstack([xx.ravel(), yy.ravel()])
+values = np.vstack([x, y])
+kernel = st.gaussian_kde(values)
+f = np.reshape(kernel(positions).T, xx.shape)
+
+
+fig = plt.figure(figsize=(8,8))
+ax = fig.gca()
+ax.set_xlim(xmin, xmax)
+ax.set_ylim(ymin, ymax)
+cfset = ax.contourf(xx, yy, f, cmap='coolwarm')
+ax.imshow(np.rot90(f), cmap='coolwarm', extent=[xmin, xmax, ymin, ymax])
+cset = ax.contour(xx, yy, f, colors='k')
+ax.clabel(cset, inline=1, fontsize=10)
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+plt.title('2D Gaussian Kernel density estimation')
+plt.show()

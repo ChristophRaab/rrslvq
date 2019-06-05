@@ -518,7 +518,7 @@ if __name__ == "__main__":
     model_names = ["rrslvq"]
 
     evaluator = EvaluatePrequential(show_plot=False,max_samples=5000, 
-    restart_stream=True,batch_size=30,metrics=['kappa', 'kappa_m', 'accuracy']) 
+    restart_stream=True,batch_size=50,metrics=['kappa', 'kappa_m', 'accuracy']) 
 
     evaluator.evaluate(stream=stream, model=rrslvq,model_names=model_names)
     
@@ -539,19 +539,19 @@ for x,z in zip(idx1,idx2):
     plt.figure(i)
     i = i +1
     fig, ax = plt.subplots()
-    ax.set_title('Insert as Mean')
+    # ax.set_title('Insert as Mean')
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
     red, = plt.plot(p1[:,x],p1[:,z],'ro')
     brown, = plt.plot(X[y==0][:,x],X[y==0][:,z],'bx')
     green,= plt.plot(X[y==1][:,x],X[y==1][:,z],'gx')
     plt.legend([brown, green,red], ["Class 1", "Class 2","Prototypes"])
-    ax.set_title('Insert Step')
+    # ax.set_title('Insert Step')
     
     plt.figure(i)
     i = i +1
     fig, ax = plt.subplots()
-    ax.set_title('Optimization step')
+    # ax.set_title('Optimization step')
     ax.set_xlabel('$x_1$')
     ax.set_ylabel('$x_2$')
     brown, = plt.plot(X[y==0][:,x],X[y==0][:,z],'bx')
