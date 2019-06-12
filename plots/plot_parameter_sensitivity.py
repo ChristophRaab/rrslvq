@@ -26,17 +26,17 @@ def plotalpha():
     fig.savefig("ps_ks_alpha.eps",dpi=1000, format='eps',quality=95)
     
 def plotr():
-    x = np.arange(1,1000,1) 
+    x = np.arange(10,1000,1) 
     alphas = [0.1,0.01,0.001,0.0001]
     fig, ax = plt.subplots()
 
-    for alpha in alphas:
-        y = [ks(alpha,int(r)) for r in x]
-        ax.plot(x, y,label=r"$\alpha$ = "+str(alpha))
+    for a in alphas:
+        y = [ks(a,r) for r in x]
+        ax.plot(x,y,label=r"$\alpha$ = "+str(a))
     
 
-    ax.set_xscale("log")
-    ax.set(xlabel='Window Size $r$', ylabel='Required Distance') 
+    # ax.set_xscale("log")
+    ax.set(xlabel='Sample Size $r$', ylabel='Required Distance') 
     ax.legend()
     plt.show()
     fig.savefig("ps_ks_r.eps",dpi=1000, format='eps',quality=95)

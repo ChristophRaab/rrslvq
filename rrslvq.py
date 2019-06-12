@@ -40,7 +40,7 @@ try:
     # No Concept Drift Generators
     from skmultiflow.data.random_rbf_generator import RandomRBFGenerator
 
-except Error:
+except ImportError:
     print("Failed to import SciKit-Multiflow!")
 
     

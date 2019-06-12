@@ -13,7 +13,7 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
     time = np.array([])
 
     fig, ax = plt.subplots()
-    
+    fig.set_size_inches(6.4, 4.8)
     part_length = rate*length
     for part in range(int(length/part_length)):
         t = np.arange(time.size, time.size+part_length, 1)
@@ -24,8 +24,6 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
         time = np.append(time,t)
 
     probability_drift = (probability_drift-.5)*2
-    ax.set_xlabel('Timestep')
-    ax.set_ylabel('Probability')
     
     t = np.arange(1, probability_drift.size+1, 1)
     
@@ -40,10 +38,11 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
 
     ax.plot(pos_signal,label="Concept 1")
     ax.plot(neg_signal,label="Concept 2")
-   
 
-    fig.savefig(filename,dpi=1000, format='eps',quality=95)
     plot_attributes(plt,ax)
+
+    fig.savefig(filename,dpi=1000, format='eps',quality=100,bbox_inches='tight')
+
     plt.show() if plot else ""
 
 
@@ -53,6 +52,7 @@ def incremental_drift(length=50000,width=10000,plot=True,filename="incremental_d
     time = np.array([])
 
     fig, ax = plt.subplots()
+    fig.set_size_inches(6.4, 4.8)
     t = np.arange(time.size, length, 1)
     x = np.array([1.0 / (1.0 + np.exp(-4.0 * float(i - int(length/2)) / float(width))) for i in t])
     y = np.array([1 - p for p in x])
@@ -61,8 +61,6 @@ def incremental_drift(length=50000,width=10000,plot=True,filename="incremental_d
     time = np.append(time,t)
 
     probability_drift = (probability_drift-.5)*2
-    ax.set_xlabel('Timestep')
-    ax.set_ylabel('Probability')
 
     t = np.arange(1, probability_drift.size+1, 1)
 
@@ -76,9 +74,10 @@ def incremental_drift(length=50000,width=10000,plot=True,filename="incremental_d
 
     ax.plot(pos_signal,label="Concept 1")
     ax.plot(neg_signal,label="Concept 2")
-   
-    fig.savefig(filename,dpi=1000, format='eps',quality=95)
     plot_attributes(plt,ax)
+
+    fig.savefig(filename,dpi=1000, format='eps',quality=100,bbox_inches='tight')
+
     plt.show() if plot else ""
 
 
@@ -89,6 +88,7 @@ def gradual_drift(length=50000,width=10,rate=0.4,plot=True,filename="gradual_dri
     time = np.array([])
 
     fig, ax = plt.subplots()
+    fig.set_size_inches(6.4, 4.8)
     part_length = rate*length
     for part in range(int(length/part_length)):
 
@@ -119,30 +119,32 @@ def gradual_drift(length=50000,width=10,rate=0.4,plot=True,filename="gradual_dri
     ax.plot(pos_signal,label="Concept 1")
     ax.plot(neg_signal,label="Concept 2")
     plot_attributes(plt,ax)
+
     plt.show() if plot else ""
-    fig.savefig(filename,edpi=1000, format='eps',quality=95)
+    fig.savefig(filename,edpi=1000, format='eps',quality=100)
 
 def plot_attributes(plt,ax):
     #plotting
     ax.set_xlabel('Timestep')
-    ax.set_ylabel('Probability')
+    ax.set_ylabel('Data Mean')
     plt.style.use('seaborn-paper')
 
 
     ax.legend()
-
-    plt.yticks([-1,0,1],[1,0,1],rotation='vertical')
-    ax1 = ax.twinx()
-    plt.yticks([-0,1.0],["Concept 1","Concept 2"],rotation='vertical')
-    ticks = ax1.yaxis.get_majorticklabels()
-
-    ticks[0].set_verticalalignment("bottom")
-    ticks[1].set_verticalalignment("top")
+    plt.yticks([-1,1.0],["Concept 1","Concept 2"],rotation='vertical')
+    ticks = ax.yaxis.get_majorticklabels()
+    ticks[0].set_verticalalignment("center")
+    ticks[1].set_verticalalignment("center")
 
 
+    # ax1 = ax.twinx()
+    # plt.yticks([-1,0,1],["","",""],rotation='vertical')
 
-reoccuring_drift(width=600) # Frequent Reoccurring
+
+
+
+reoccuring_drift(width=600,filename="frequent_reoccuing_drift.eps") # Frequent Reoccurring
 reoccuring_drift(width=1000,rate=0.4) # Reoccurring
 incremental_drift(width=15000) # Incremental
 incremental_drift(width=2500,filename="abrupt_drift.eps") # Abrupt
-gradual_drift(length=40000,width=1000,rate=0.3) #Gradual
+gradual_drift(length=50000,width=1000,rate=0.4) #Gradual

@@ -22,7 +22,6 @@ s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_clas
 
 stream = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=1)
 
-ReoccuringDriftStream()
 n_prototypes_per_class = 4
 sigma = 10
 ReoccuringDriftStream()
