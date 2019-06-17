@@ -41,7 +41,7 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
 
     plot_attributes(plt,ax)
 
-    fig.savefig(filename,dpi=1000, format='eps',quality=100,bbox_inches='tight')
+    fig.savefig(filename,dpi=1000, format='eps',bbox_inches='tight')
 
     plt.show() if plot else ""
 
@@ -76,7 +76,7 @@ def incremental_drift(length=50000,width=10000,plot=True,filename="incremental_d
     ax.plot(neg_signal,label="Concept 2")
     plot_attributes(plt,ax)
 
-    fig.savefig(filename,dpi=1000, format='eps',quality=100,bbox_inches='tight')
+    fig.savefig(filename,dpi=1000, format='eps',bbox_inches='tight')
 
     plt.show() if plot else ""
 
@@ -121,7 +121,7 @@ def gradual_drift(length=50000,width=10,rate=0.4,plot=True,filename="gradual_dri
     plot_attributes(plt,ax)
 
     plt.show() if plot else ""
-    fig.savefig(filename,edpi=1000, format='eps',quality=100)
+    fig.savefig(filename,dpi=1000, format='eps',bbox_inches='tight')
 
 def plot_attributes(plt,ax):
     #plotting
@@ -147,4 +147,4 @@ reoccuring_drift(width=600,filename="frequent_reoccuing_drift.eps") # Frequent R
 reoccuring_drift(width=1000,rate=0.4) # Reoccurring
 incremental_drift(width=15000) # Incremental
 incremental_drift(width=2500,filename="abrupt_drift.eps") # Abrupt
-gradual_drift(length=50000,width=1000,rate=0.4) #Gradual
+gradual_drift(length=45000,width=1000,rate=0.3) #Gradual

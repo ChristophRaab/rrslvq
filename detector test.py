@@ -7,7 +7,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Test settings
-n_batches = 10000
+n_batches = 100000
 batch_size = 10
 start_size = 200
 study_size = 1
@@ -29,7 +29,7 @@ acc = [[] for i in range(study_size)]
 # Initialization of streams
 s = Study()
 s_streams = s.init_standard_streams()
-r_streams = s.init_reoccuring_standard_streams()
+r_streams =  s.init_reoccuring_standard_streams()
 cd_truth = np.concatenate([np.tile(cd_truth,len(s_streams)),np.tile(rec_truth,len(r_streams))])
 # Setting Concept Drift position for non-reoccurring concept drift streams
 for s in s_streams:
@@ -41,8 +41,6 @@ for s in r_streams:
 
 # Merge of stream array
 streams = s_streams+r_streams
-
-
 
 # Detectors with Naive Bayes classifier
 # plus concept drift detection placeholder
@@ -60,7 +58,7 @@ for i in range(study_size):
         stream.prepare_for_use()
         stream.restart()
         X,y = stream.next_sample(start_size)
-
+    
 
         for c in cls:
             c.partial_fit(X, y)
@@ -94,7 +92,7 @@ for i in range(study_size):
 # Accuracy: Merge of results
 acc = np.array(acc).reshape((study_size,len(streams),len(detectors)))
 mean_c = np.mean(acc,axis=(0))
-mean = np.mean(acc, axis=(0,1)).round(2).astype(float)
+mean = np.mean(acc, axis=(0,1)).round(4).astype(float)
 df = pd.DataFrame(list(mean_c)+list([mean]),columns=detectors,index=[stream.name for stream in streams]+["Mean"])
 df.to_csv("prediction_results.csv")
 
