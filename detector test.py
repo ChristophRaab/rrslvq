@@ -2,12 +2,13 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from cd_naive_bayes import cdnb
+from cd_ht import cdht
 from bix.evaluation.study import Study
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Test settings
-n_batches = 100000
+n_batches = 10000
 batch_size = 10
 start_size = 200
 study_size = 1
@@ -46,6 +47,8 @@ streams = s_streams+r_streams
 # plus concept drift detection placeholder
 detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
 cls = [cdnb(drift_detector=s) for s in detectors]
+cls = [cdht(drift_detector="KSWIN")]
+detectors =  ["HT"]
 cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
 
 # Testscript
@@ -94,7 +97,7 @@ acc = np.array(acc).reshape((study_size,len(streams),len(detectors)))
 mean_c = np.mean(acc,axis=(0))
 mean = np.mean(acc, axis=(0,1)).round(4).astype(float)
 df = pd.DataFrame(list(mean_c)+list([mean]),columns=detectors,index=[stream.name for stream in streams]+["Mean"])
-df.to_csv("prediction_results.csv")
+df.to_csv("prediction_results_ht.csv")
 
 # Confusion Matrix: Calculation and plot
 result = []
@@ -110,4 +113,4 @@ for i in range(len(detectors)):
 
     result.append(list(c_matrix.flatten()))
 df = pd.DataFrame(result)
-df.to_csv("confusion_matrix.csv",index=None,header=["True Negative","False Positive","False Negative","True Positive"])
+df.to_csv("confusion_matrix_ht.csv",index=None,header=["True Negative","False Positive","False Negative","True Positive"])

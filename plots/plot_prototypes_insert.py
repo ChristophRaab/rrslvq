@@ -19,7 +19,6 @@ from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 
 from bix.detectors.kswin import KSWIN
-from skmultiflow.core.base import StreamModel
 
 
 from skmultiflow.data.mixed_generator import MIXEDGenerator

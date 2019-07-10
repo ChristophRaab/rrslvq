@@ -36,6 +36,5 @@ def test_grid():
     cv.test()
     cv.save_summary()
  
-if __name__ == "__main__":  
-        # parameter_grid_search():
+if __name__ == "__main__":
         test_grid()
