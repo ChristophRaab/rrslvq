@@ -41,6 +41,15 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
 
     plot_attributes(plt,ax)
 
+    SMALL = 14
+    SIZE = 16
+    plt.rc('font', size=SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL)  # legend fontsize
+    plt.rc('figure', titlesize=SIZE)  # fontsize of the figure title
     fig.savefig(filename,dpi=1000, format='eps',bbox_inches='tight')
 
     plt.show() if plot else ""
@@ -144,7 +153,7 @@ def plot_attributes(plt,ax):
 
 
 reoccuring_drift(width=600,filename="frequent_reoccuing_drift.eps") # Frequent Reoccurring
-reoccuring_drift(width=1000,rate=0.4) # Reoccurring
-incremental_drift(width=15000) # Incremental
-incremental_drift(width=2500,filename="abrupt_drift.eps") # Abrupt
-gradual_drift(length=45000,width=1000,rate=0.3) #Gradual
+# reoccuring_drift(width=1000,rate=0.4) # Reoccurring
+# incremental_drift(width=15000) # Incremental
+# incremental_drift(width=2500,filename="abrupt_drift.eps") # Abrupt
+# gradual_drift(length=45000,width=1000,rate=0.3) #Gradual

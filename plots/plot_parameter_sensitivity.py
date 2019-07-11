@@ -18,7 +18,15 @@ def plotalpha():
         y = [ks(a,r) for a in alpha]
 
         ax.plot(alpha,y,label="$r$ = "+str(r))
-        
+    SIZE = 18
+    SMALL = 14
+    plt.rc('font', size=SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=SIZE)  # legend fontsize
+    plt.rc('figure', titlesize=SIZE)
     ax.set_xscale("log")
     ax.legend()
     ax.set(xlabel=r'$\alpha$', ylabel='Required Distance')
@@ -33,7 +41,15 @@ def plotr():
     for a in alphas:
         y = [ks(a,r) for r in x]
         ax.plot(x,y,label=r"$\alpha$ = "+str(a))
-    
+    SIZE = 18
+    SMALL = 14
+    plt.rc('font', size=SIZE)  # controls default text sizes
+    plt.rc('axes', titlesize=SIZE)  # fontsize of the axes title
+    plt.rc('axes', labelsize=SIZE)  # fontsize of the x and y labels
+    plt.rc('xtick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('legend', fontsize=SMALL)  # legend fontsize
+    plt.rc('figure', titlesize=SIZE)
 
     # ax.set_xscale("log")
     ax.set(xlabel='Sample Size $r$', ylabel='Required Distance') 
