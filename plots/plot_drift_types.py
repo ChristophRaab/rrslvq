@@ -46,10 +46,10 @@ def reoccuring_drift(length=50000,width=10,rate=0.1,plot=True,filename="reoccuri
     pos_signal[pos_signal <= 0] = np.nan
     neg_signal[neg_signal > 0] = np.nan
 
-    ax.plot(pos_signal,label="Concept 1", linestyle='dotted')
-    ax.plot(neg_signal,label="Concept 2")
+    ax.plot(pos_signal,label="Concept 2", linestyle='dotted')
+    ax.plot(neg_signal,label="Concept 1")
     
-#    plt.xticks(np.arange(0, 45000, step=10000))
+    plt.xticks(np.arange(0, 45000, step=10000))
 
     plot_attributes(plt,ax)
 
@@ -82,8 +82,8 @@ def incremental_drift(length=50000,width=10000,plot=True,filename="incremental_d
     neg_signal[neg_signal > 0] = np.nan
 
 
-    ax.plot(pos_signal,label="Concept 1", linestyle='dotted')
-    ax.plot(neg_signal,label="Concept 2")
+    ax.plot(pos_signal,label="Concept 2", linestyle='dotted')
+    ax.plot(neg_signal,label="Concept 1")
     plot_attributes(plt,ax)
 
     fig.savefig(filename,dpi=1000, format='eps',bbox_inches='tight')
@@ -125,8 +125,8 @@ def gradual_drift(length=50000,width=10,rate=0.4,plot=True,filename="gradual_dri
 
     pos_signal[pos_signal <= 0] = np.nan
     neg_signal[neg_signal > 0] = np.nan
-    ax.plot(pos_signal,label="Concept 1", linestyle='dotted')
-    ax.plot(neg_signal,label="Concept 2")
+    ax.plot(pos_signal,label="Concept 2", linestyle='dotted')
+    ax.plot(neg_signal,label="Concept 1")
     plot_attributes(plt,ax)
 
     plt.show() if plot else ""
@@ -153,8 +153,8 @@ def plot_attributes(plt,ax):
 
 
 
-reoccuring_drift(width=600,filename="frequent_reoccuing_drift.eps") # Frequent Reoccurring
+#reoccuring_drift(width=600,filename="frequent_reoccuing_drift.eps") # Frequent Reoccurring
 #reoccuring_drift(width=1000,rate=0.4) # Reoccurring
 #incremental_drift(width=15000) # Incremental
 #incremental_drift(width=2500,filename="abrupt_drift.eps") # Abrupt
-#gradual_drift(length=45000,width=1000,rate=0.3) #Gradual
+gradual_drift(length=45000,width=1000,rate=0.3) #Gradual
