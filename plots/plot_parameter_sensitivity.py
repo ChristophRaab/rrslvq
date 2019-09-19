@@ -13,17 +13,18 @@ def plotalpha():
     alpha = 1 / alpha
     fig, ax = plt.subplots()
     wr = np.arange(100,500,100)
-    
+
     for r in wr:
         y = [ks(a,r) for a in alpha]
 
         ax.plot(alpha,y,label="$r$ = "+str(r))
     SIZE = 18
     SMALL = 14
+
     plt.rc('font', size=SIZE)  # controls default text sizes
     plt.rc('axes', titlesize=SIZE)  # fontsize of the axes title
     plt.rc('axes', labelsize=SIZE)  # fontsize of the x and y labels
-    plt.rc('xtick', labelsize=SMALL)  # fontsize of the tick labels
+    plt.rc('xtick', labelsize=SIZE)  # fontsize of the tick labels
     plt.rc('ytick', labelsize=SMALL)  # fontsize of the tick labels
     plt.rc('legend', fontsize=SIZE)  # legend fontsize
     plt.rc('figure', titlesize=SIZE)
@@ -60,8 +61,8 @@ def plotr():
 
 def ks(alpha,r):
     return m.sqrt(-1*(m.log(alpha))/(r))
-
-plotalpha()
 plotr()
+plotalpha()
+
 
 

@@ -4,7 +4,7 @@ from bix.detectors.kswin import KSWIN
 from skmultiflow.drift_detection.adwin import ADWIN
 from skmultiflow.drift_detection.eddm import  EDDM
 from skmultiflow.drift_detection.ddm import DDM
-
+from bix.detectors.ksvec import KSVEC
 class cdnb(ClassifierMixin, BaseEstimator):
     def __init__(self, alpha=0.001,drift_detector="KSWIN"):
         self.classifier = NaiveBayes()
@@ -45,15 +45,22 @@ class cdnb(ClassifierMixin, BaseEstimator):
                 self.cdd = [DDM() for elem in X.T]
             if self.drift_detector == "EDDM":
                 self.cdd = [EDDM() for elem in X.T]
+            if self.drift_detector == "KSVEC":
+                self.cdd = KSVEC(vec_size=X.shape[1])
             self.init_drift_detection = False
         self.drift_detected = False
 
         if not self.init_drift_detection:
-            for elem, detector in zip(X.T, self.cdd):
-                for e in elem:
-                    detector.add_element(e)
-                    if detector.detected_change():
-                        self.drift_detected = True
-                        self.n_detections = self.n_detections +1
+            if self.drift_detector == "KSVEC":
+                self.cdd.add_element(X)
+                if self.cdd.detected_change():
+                    self.drift_detected = True
+            else:
+                for elem, detector in zip(X.T, self.cdd):
+                    for e in elem:
+                        detector.add_element(e)
+                        if detector.detected_change():
+                            self.drift_detected = True
+                            self.n_detections = self.n_detections +1
 
         return self.drift_detected

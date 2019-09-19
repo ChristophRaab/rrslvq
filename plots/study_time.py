@@ -38,7 +38,7 @@ def evaluate(stream,metrics,study_size):
     clfs,names = init_classifiers()
     stream.prepare_for_use()
     evaluator = EvaluatePrequential(show_plot=False, batch_size=10, max_samples=study_size, metrics=metrics,
-                                    output_file=stream.name+"_memory_other.csv")
+                                    output_file=stream.name+"_time_other.csv")
 
     evaluator.evaluate(stream=stream, model=clfs, model_names=names)
 

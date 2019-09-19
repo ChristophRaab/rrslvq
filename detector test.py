@@ -8,7 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Test settings
-n_batches = 10000
+n_batches = 1000
 batch_size = 10
 start_size = 200
 study_size = 1
@@ -31,6 +31,11 @@ acc = [[] for i in range(study_size)]
 s = Study()
 s_streams = s.init_standard_streams()
 r_streams =  s.init_reoccuring_standard_streams()
+del s_streams[3]
+del s_streams[3]
+del r_streams[2]
+del r_streams[2]
+
 cd_truth = np.concatenate([np.tile(cd_truth,len(s_streams)),np.tile(rec_truth,len(r_streams))])
 # Setting Concept Drift position for non-reoccurring concept drift streams
 for s in s_streams:
@@ -43,12 +48,12 @@ for s in r_streams:
 # Merge of stream array
 streams = s_streams+r_streams
 
+
 # Detectors with Naive Bayes classifier
 # plus concept drift detection placeholder
-detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
+detectors = ["KSWIN", "ADWIN", "EDDM", "DDM","KSVEC"]
 cls = [cdnb(drift_detector=s) for s in detectors]
-cls = [cdht(drift_detector="KSWIN")]
-detectors =  ["HT"]
+
 cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
 
 # Testscript
@@ -61,10 +66,12 @@ for i in range(study_size):
         stream.prepare_for_use()
         stream.restart()
         X,y = stream.next_sample(start_size)
-    
+
+        detectors = ["KSWIN", "ADWIN", "EDDM", "DDM", "KSVEC"]
+        cls = [cdnb(drift_detector=s) for s in detectors]
 
         for c in cls:
-            c.partial_fit(X, y)
+            c.partial_fit(X, y,classes=stream._target_values)
 
         # Prediction accuracy placeholder
         label_pred = [[] for c in cls]
@@ -113,4 +120,4 @@ for i in range(len(detectors)):
 
     result.append(list(c_matrix.flatten()))
 df = pd.DataFrame(result)
-df.to_csv("confusion_matrix_ht.csv",index=None,header=["True Negative","False Positive","False Negative","True Positive"])
+df.to_csv("confusion_matrix.csv",index=None,header=["True Negative","False Positive","False Negative","True Positive"])

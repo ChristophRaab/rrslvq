@@ -42,47 +42,13 @@ def evaluate(stream,metrics,study_size):
 
     evaluator.evaluate(stream=stream, model=clfs, model_names=names)
 
-s1 = MIXEDGenerator(classification_function = 1, random_state= 112, balance_classes = False)
-s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
-mixed_ra = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=100,pause = 1000)
-mixed_a = ConceptDriftStream(stream=s1,
-                           drift_stream=s2,
-                           alpha=90.0,
-                           random_state=None,
-                           position=5000,
-                           width=1)
-sea_a = ConceptDriftStream(stream=SEAGenerator(random_state=112, noise_percentage=0.1),
-                           drift_stream=SEAGenerator(random_state=112,
-                                                     classification_function=2, noise_percentage=0.1),
-                           alpha=90.0,
-                           random_state=None,
-                           position=50000,
-                           width=1)
-
-sea_ra = ReoccuringDriftStream(stream=SEAGenerator(random_state=112, noise_percentage=0.1),
-                              drift_stream=SEAGenerator(random_state=112,
-                                                        classification_function=2, noise_percentage=0.1),
-                              alpha=90.0,
-                              random_state=None,
-                              position=50000,
-                              width=1)
-sea_rg = ReoccuringDriftStream(stream=SEAGenerator(random_state=112, noise_percentage=0.1),
-                              drift_stream=SEAGenerator(random_state=112,
-                                                        classification_function=2, noise_percentage=0.1),
-                              alpha=90.0,
-                              random_state=None,
-                              position=50000,
-                              width=1000)
 s = Study()
-parallel = -1
-study_size = 1000000 #100000
+parallel = 8
+study_size = 100000 #100000
 metrics = ['accuracy',"kappa"]
 # metrics = ["accuracy","model_size"]
 #evaluate(stream,clfs,metrics,names,study_size)
-streams = s.init_standard_streams()  + s.init_reoccuring_standard_streams()
-streams = [sea_ra,sea_rg]
-for stream in streams:
-    evaluate(stream,metrics,study_size)
+streams = s.init_standard_streams()  + s.init_reoccuring_standard_streams() + s.init_real_world()
 
 Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
 #
