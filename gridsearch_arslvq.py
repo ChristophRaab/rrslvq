@@ -35,6 +35,9 @@ grid = {
 
 
 matrix = list(itertools.product(*[list(v) for v in grid.values()]))
+random_search = np.random.choice(len(matrix),size=90,replace=False)
+matrix = [matrix[i] for i in random_search]
+
 best = []
 iterations = len(matrix) * len(streams)
 
