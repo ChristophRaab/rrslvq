@@ -25,7 +25,7 @@ metrics = ['accuracy','kappa']
 study = Study()
 streams =  study.init_esann_si_streams()
 os.chdir(cwd)
-
+streams = streams[6:]
 grid = {
 "stat_size" : np.array([10,30,50]),
 "gamma" : np.array([0.7,0.9,0.99]),
@@ -47,7 +47,7 @@ for i,stream in enumerate(streams):
     results.append(Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(param,stream,study_size) for param in matrix))
     results = np.array(results)
     best.append(results[np.argmax(results[:,-1])])
-    np.savetxt("Gridsearch_results_"+str(stream.basename), results[0], delimiter=",")
+    np.savetxt("Gridsearch_results_"+str(stream.name), results[0], delimiter=",")
 
 np.savetxt("Summary Grid Search",best[0],delimiter=",")
 # Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
