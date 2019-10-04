@@ -17,15 +17,15 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
     return list(params)+(evaluator._data_buffer.get_data(metric_id="accuracy", data_id="mean"))
 
 cwd  = os.getcwd()
-parallel = 10
-study_size = 100000
+parallel = 14
+study_size = 500
 metrics = ['accuracy','kappa']
 
 
 study = Study()
 streams =  study.init_esann_si_streams()
 os.chdir(cwd)
-streams = streams[6:]
+streams = streams[1:3]
 grid = {
 "stat_size" : np.array([10,30,50]),
 "gamma" : np.array([0.7,0.9,0.99]),
@@ -35,7 +35,7 @@ grid = {
 
 
 matrix = list(itertools.product(*[list(v) for v in grid.values()]))
-random_search = np.random.choice(len(matrix),size=90,replace=False)
+random_search = np.random.choice(len(matrix),size=10,replace=False)
 matrix = [matrix[i] for i in random_search]
 
 best = []
@@ -45,11 +45,11 @@ for i,stream in enumerate(streams):
     results = []
     print("Stream "+str(i+1)+" of "+ str(len(streams)))
     results.append(Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(param,stream,study_size) for param in matrix))
-    results = np.array(results)
+    results = np.array(results[0])
     best.append(results[np.argmax(results[:,-1])])
-    np.savetxt("Gridsearch_results_"+str(stream.name), results[0], delimiter=",")
+    np.savetxt("Gridsearch_"+str(stream.name)+".csv", results[0], delimiter=",")
 
-np.savetxt("Summary Grid Search",best[0],delimiter=",")
+np.savetxt("Summary Grid Search.csv",best,delimiter=",")
 # Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
 #
 # streams  = s.init_real_world()
