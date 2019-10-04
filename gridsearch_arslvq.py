@@ -18,7 +18,7 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
 
 cwd  = os.getcwd()
 parallel = 14
-study_size = 500
+study_size = 70000
 metrics = ['accuracy','kappa']
 
 
@@ -35,7 +35,7 @@ grid = {
 
 
 matrix = list(itertools.product(*[list(v) for v in grid.values()]))
-random_search = np.random.choice(len(matrix),size=10,replace=False)
+random_search = np.random.choice(len(matrix),size=100,replace=False)
 matrix = [matrix[i] for i in random_search]
 
 best = []
