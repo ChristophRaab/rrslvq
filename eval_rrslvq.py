@@ -1,40 +1,46 @@
-from __future__ import division
 
-import os
-import sys
-
+from bix.evaluation.study import Study
+from bix.classifiers.arslvq import ARSLVQ
+import itertools
 import numpy as np
 import pandas as pd
+from skmultiflow.evaluation import EvaluatePrequential
+from joblib import Parallel, delayed
+import os
+def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
+    clf = ARSLVQ(gamma=params[1],sigma=params[2],prototypes_per_class=int(params[3]),confidence=params[4])
+    stream.prepare_for_use()
+    evaluator = EvaluatePrequential(show_plot=False, batch_size=10, max_samples=study_size, metrics=metrics)
 
-from bix.classifiers.rrslvq import RRSLVQ
-from bix.classifiers.rslvq import RSLVQ
-from bix.data.reoccuringdriftstream import ReoccuringDriftStream
-from bix.evaluation.crossvalidation import CrossValidation
-from bix.evaluation.gridsearch import GridSearch
-from bix.utils.geometric_median import *
+    model = evaluator.evaluate(stream=stream, model=clf)
 
-
-from skmultiflow.lazy.knn import KNN
-from skmultiflow.lazy.sam_knn import SAMKNN
-from skmultiflow.meta import OzaBaggingAdwin
-from skmultiflow.meta.adaptive_random_forests import AdaptiveRandomForest
-from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
-from skmultiflow.trees.hoeffding_adaptive_tree import HAT
-
-
-def parameter_grid_search():
-        grid = {"sigma": np.arange(2,21,2), "prototypes_per_class": np.arange(2,11,2)}
-        gs = GridSearch(RRSLVQ(),grid)
-        gs.search()
-        gs.save_summary()
+    print(evaluator.get_mean_measurements())
+    return [stream.name ]\
+           +(evaluator._data_buffer.get_data(metric_id="accuracy", data_id="mean"))\
+            +(evaluator._data_buffer.get_data(metric_id="kappa", data_id="mean"))
 
 
-def test_grid():
-    clfs = [RRSLVQ(),RSLVQ(),HAT(),OzaBaggingAdwin(base_estimator=KNN()),AdaptiveRandomForest(),SAMKNN()]
-    cv = CrossValidation(clfs=clfs,max_samples=500,test_size=1)
-    cv.streams =cv.init_reoccuring_streams()
-    cv.test()
-    cv.save_summary()
- 
-if __name__ == "__main__":
-        test_grid()
+
+#Study Parameters
+parallel = -1
+study_size = 1000000
+metrics = ['accuracy','kappa']
+
+
+cwd  = os.getcwd()
+study = Study()
+streams =  study.init_esann_si_streams()[1:3]
+os.chdir(cwd)
+
+parameters = pd.read_csv("Summary Grid Search.csv",index_col=0,header=0)
+parameters = parameters.values[:,1:-1]
+
+# for i,(stream,params) in enumerate(zip(streams,parameters)):
+results = []
+
+results.append(Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(param,stream,study_size)  for stream,param in zip(streams,parameters)))
+
+
+df = pd.DataFrame(results[0])
+
+df.to_csv("Evaluation_ARSLVQ")

@@ -3,6 +3,7 @@ from bix.evaluation.study import Study
 from bix.classifiers.arslvq import ARSLVQ
 import itertools
 import numpy as np
+import pandas as pd
 from skmultiflow.evaluation import EvaluatePrequential
 from joblib import Parallel, delayed
 import os
@@ -16,16 +17,19 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
     print(evaluator.get_mean_measurements())
     return list(params)+(evaluator._data_buffer.get_data(metric_id="accuracy", data_id="mean"))
 
-cwd  = os.getcwd()
+
+#Study Parameters
 parallel = 14
 study_size = 70000
 metrics = ['accuracy','kappa']
+n_parameters = 100
 
 
+
+cwd  = os.getcwd()
 study = Study()
 streams =  study.init_esann_si_streams()
 os.chdir(cwd)
-streams = streams[1:3]
 grid = {
 "stat_size" : np.array([10,30,50]),
 "gamma" : np.array([0.7,0.9,0.99]),
@@ -35,7 +39,7 @@ grid = {
 
 
 matrix = list(itertools.product(*[list(v) for v in grid.values()]))
-random_search = np.random.choice(len(matrix),size=100,replace=False)
+random_search = np.random.choice(len(matrix),size=n_parameters,replace=False)
 matrix = [matrix[i] for i in random_search]
 
 best = []
@@ -49,9 +53,8 @@ for i,stream in enumerate(streams):
     best.append(results[np.argmax(results[:,-1])])
     np.savetxt("Gridsearch_"+str(stream.name)+".csv", results[0], delimiter=",")
 
-np.savetxt("Summary Grid Search.csv",best,delimiter=",")
-# Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
-#
-# streams  = s.init_real_world()
-# Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
-# #
+names = [stream.name for stream in streams]
+data = names.append(best[0].tolist())
+
+df = pd.DataFrame(data)
+df.to_csv("Summary Grid Search.csv")
