@@ -19,10 +19,10 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
 
 
 #Study Parameters
-parallel = 14
-study_size = 70000
+parallel = -1
+study_size = 1000000
 metrics = ['accuracy','kappa']
-n_parameters = 100
+n_parameters = 20
 
 
 
@@ -51,7 +51,7 @@ for i,stream in enumerate(streams):
     results.append(Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(param,stream,study_size) for param in matrix))
     results = np.array(results[0])
     best.append(results[np.argmax(results[:,-1])])
-    np.savetxt("Gridsearch_"+str(stream.name)+".csv", results[0], delimiter=",")
+    np.savetxt("Gridsearch_"+str(stream.name)+".csv", results, delimiter=",")
 
 names = [stream.name for stream in streams]
 data = names.append(best[0].tolist())

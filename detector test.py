@@ -8,7 +8,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # Test settings
-n_batches = 1000
+n_batches = 100000
 batch_size = 10
 start_size = 200
 study_size = 1
@@ -20,7 +20,7 @@ cd_truth[int(n_batches/2)] = 1
 # Ground truth label of reoccurring concept drift streams
 rec_truth = np.zeros(n_batches)
 for idx in range(rec_truth.size):
-    rec_truth[idx] = 1 if (idx*batch_size) % 10  == 0 and idx != 0 else 0
+    rec_truth[idx] = 1 if (idx*batch_size) % 1000  == 0 and idx != 0 else 0
 
 
 
@@ -51,7 +51,7 @@ streams = s_streams+r_streams
 
 # Detectors with Naive Bayes classifier
 # plus concept drift detection placeholder
-detectors = ["KSWIN", "ADWIN", "EDDM", "DDM","KSVEC"]
+detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
 cls = [cdnb(drift_detector=s) for s in detectors]
 
 cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
@@ -67,7 +67,7 @@ for i in range(study_size):
         stream.restart()
         X,y = stream.next_sample(start_size)
 
-        detectors = ["KSWIN", "ADWIN", "EDDM", "DDM", "KSVEC"]
+        detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
         cls = [cdnb(drift_detector=s) for s in detectors]
 
         for c in cls:
@@ -86,7 +86,7 @@ for i in range(study_size):
             for idx,c in enumerate(cls):
                 y_pred = c.predict(X)
                 label_pred[idx].extend(y_pred)
-                c.partial_fit(X,y)
+                c.partial_fit(X,y,classes=stream._target_values)
                 if c.drift_detected == True:
                     cd_pred[idx][i][j][b] = 1
 
