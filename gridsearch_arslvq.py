@@ -22,7 +22,7 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
 parallel = -1
 study_size = 1000000
 metrics = ['accuracy','kappa']
-n_parameters = 20
+n_parameters = 60
 
 
 
@@ -31,16 +31,17 @@ study = Study()
 streams =  study.init_esann_si_streams()
 os.chdir(cwd)
 grid = {
-"stat_size" : np.array([10,30,50]),
-"gamma" : np.array([0.7,0.9,0.99]),
-"sigma" : np.arange(1, 11, 1),
-"prototypes_per_class" : np.arange(1, 11, 1),
-"confidence" : np.array([0.0001,0.001,0.01])}
+"stat_size" : np.array([30]),
+"gamma" : np.array([0.9,0.99]),
+"sigma" : np.array([1,2,5,7,9]),
+"prototypes_per_class" : np.array([1,2,5,7,9]),
+"confidence" : np.array([0.0001])}
 
 
 matrix = list(itertools.product(*[list(v) for v in grid.values()]))
-random_search = np.random.choice(len(matrix),size=n_parameters,replace=False)
-matrix = [matrix[i] for i in random_search]
+if len(matrix) > 60:
+    random_search = np.random.choice(len(matrix),size=n_parameters,replace=False)
+    matrix = [matrix[i] for i in random_search]
 
 best = []
 iterations = len(matrix) * len(streams)

@@ -22,25 +22,31 @@ def evaluate(params,stream,study_size,metrics=['accuracy','kappa']):
 
 
 #Study Parameters
-parallel = -1
+parallel = 18
 study_size = 1000000
 metrics = ['accuracy','kappa']
 
 
 cwd  = os.getcwd()
 study = Study()
-streams =  study.init_esann_si_streams()[1:3]
+streams =  study.init_esann_si_streams()
 os.chdir(cwd)
 
-parameters = pd.read_csv("Summary Grid Search.csv",index_col=0,header=0)
+parameters = pd.read_csv("Summary_Grid_Search.csv",index_col=0,header=0)
 parameters = parameters.values[:,1:-1]
 
-# for i,(stream,params) in enumerate(zip(streams,parameters)):
 results = []
 
 results.append(Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(param,stream,study_size)  for stream,param in zip(streams,parameters)))
 
+results = results[0]
+df = pd.DataFrame(results)
 
-df = pd.DataFrame(results[0])
-
-df.to_csv("Evaluation_ARSLVQ")
+df_syn = df.drop([0,1,2,3,4,5])
+df_real = df.iloc[[0,1,2,3,4,5],:]
+df = df.append(["mean",df.mean()])
+df_syn = df_syn.append(["mean",df_syn.mean()])
+df_real = df_real.append(["mean",df_real.mean()])
+df.to_csv("Summary_results_overall.csv",index=False)
+df_syn.to_csv("Summary_results_syn.csv",index=False)
+df_real.to_csv("Summary_results_real.csv",index=False)

@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from cd_naive_bayes import cdnb
-from cd_ht import cdht
 from bix.evaluation.study import Study
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
 # Test settings
 n_batches = 100000
@@ -28,15 +28,13 @@ for idx in range(rec_truth.size):
 acc = [[] for i in range(study_size)]
 
 # Initialization of streams
+cwd  = os.getcwd()
 s = Study()
 s_streams = s.init_standard_streams()
-r_streams =  s.init_reoccuring_standard_streams()
-del s_streams[3]
-del s_streams[3]
-del r_streams[2]
-del r_streams[2]
-
+r_streams = s.init_reoccuring_standard_streams()
 cd_truth = np.concatenate([np.tile(cd_truth,len(s_streams)),np.tile(rec_truth,len(r_streams))])
+os.chdir(cwd)
+
 # Setting Concept Drift position for non-reoccurring concept drift streams
 for s in s_streams:
     s.position = int(n_batches*batch_size/2)
@@ -49,11 +47,11 @@ for s in r_streams:
 streams = s_streams+r_streams
 
 
+
 # Detectors with Naive Bayes classifier
 # plus concept drift detection placeholder
 detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
 cls = [cdnb(drift_detector=s) for s in detectors]
-
 cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
 
 # Testscript
@@ -67,11 +65,9 @@ for i in range(study_size):
         stream.restart()
         X,y = stream.next_sample(start_size)
 
-        detectors = ["KSWIN", "ADWIN", "EDDM", "DDM"]
-        cls = [cdnb(drift_detector=s) for s in detectors]
 
         for c in cls:
-            c.partial_fit(X, y,classes=stream._target_values)
+            c.partial_fit(X, y)
 
         # Prediction accuracy placeholder
         label_pred = [[] for c in cls]
@@ -86,7 +82,7 @@ for i in range(study_size):
             for idx,c in enumerate(cls):
                 y_pred = c.predict(X)
                 label_pred[idx].extend(y_pred)
-                c.partial_fit(X,y,classes=stream._target_values)
+                c.partial_fit(X,y)
                 if c.drift_detected == True:
                     cd_pred[idx][i][j][b] = 1
 
@@ -102,9 +98,9 @@ for i in range(study_size):
 # Accuracy: Merge of results
 acc = np.array(acc).reshape((study_size,len(streams),len(detectors)))
 mean_c = np.mean(acc,axis=(0))
-mean = np.mean(acc, axis=(0,1)).round(4).astype(float)
+mean = np.mean(acc, axis=(0,1)).round(2).astype(float)
 df = pd.DataFrame(list(mean_c)+list([mean]),columns=detectors,index=[stream.name for stream in streams]+["Mean"])
-df.to_csv("prediction_results_ht.csv")
+df.to_csv("prediction_results.csv")
 
 # Confusion Matrix: Calculation and plot
 result = []

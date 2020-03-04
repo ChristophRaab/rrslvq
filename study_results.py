@@ -1,6 +1,6 @@
 
 from __future__ import division
-
+import os
 from joblib import Parallel, delayed
 from bix.data.reoccuringdriftstream import ReoccuringDriftStream
 from bix.classifiers.rslvq import RSLVQ
@@ -30,8 +30,6 @@ def init_classifiers():
 
     clfs = [rslvq, arslvq, adf, oza, samknn]
     names = ["rslvq", "arslvq", "adf", "oza", "samknn"]
-    # clfs = [rslvq]
-    # names = ["rslvq"]
     return clfs,names
 
 def evaluate(stream,metrics,study_size):
@@ -66,19 +64,13 @@ sea_ra = ReoccuringDriftStream(stream=SEAGenerator(random_state=112, noise_perce
                               random_state=None,
                               position=50000,
                               width=1)
+cwd  = os.getcwd()
 s = Study()
-parallel = 1
-study_size = 10000 #100000
+streams = s.init_esann_si_streams()
+os.chdir(cwd)
+
+parallel = -1
+study_size = 1000000
 metrics = ['accuracy','model_size']
-# metrics = ["accuracy","model_size"]
-#evaluate(stream,clfs,metrics,names,study_size)
 streams = s.init_standard_streams()  + s.init_reoccuring_standard_streams()
-streams = [mixed_a,mixed_ra]
-for stream in streams:
-    evaluate(stream,metrics,study_size)
-#
-# Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
-#
-# streams  = s.init_real_world()
-# Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
-# #
+Parallel(n_jobs=parallel,max_nbytes=None)(delayed(evaluate)(stream,metrics,study_size) for stream in streams)
