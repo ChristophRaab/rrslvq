@@ -17,33 +17,32 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
 from kswin import KSWIN
-from ReoccuringDriftStream import ReoccuringDriftStream 
+from ReoccuringDriftStream import ReoccuringDriftStream
 
-
+from skmultiflow.core.base import ClassifierMixin, BaseSKMObject
 try:
     from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
-    from skmultiflow.core.base import StreamModel
     from skmultiflow.core.pipeline import Pipeline
 
     from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
-    from skmultiflow.lazy.knn import KNN
+    from skmultiflow.lazy import KNN
 
     #Abrupt Concept Drift Generators
-    from skmultiflow.data.stagger_generator import STAGGERGenerator
-    from skmultiflow.data.mixed_generator import MIXEDGenerator
-    from skmultiflow.data.sea_generator import SEAGenerator
-    from skmultiflow.data.sine_generator import SineGenerator
+    from skmultiflow.data import STAGGERGenerator
+    from skmultiflow.data import MIXEDGenerator
+    from skmultiflow.data import SEAGenerator
+    from skmultiflow.data import SineGenerator
 
     # Incremental Concept Drift Generators
-    from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
+    from skmultiflow.data import HyperplaneGenerator
 
     # No Concept Drift Generators
-    from skmultiflow.data.random_rbf_generator import RandomRBFGenerator
+    from skmultiflow.data import RandomRBFGenerator
 
 except ImportError:
     print("Failed to import SciKit-Multiflow!")
 
-    
+
 #!sr/bin/env python3
 #-*- coding: utf-8 -*-
 """
@@ -55,7 +54,10 @@ Created on Fri Jun 22 09:35:11 2018
 # original source code from https://github.com/MrNuggelz/sklearn-lvq)
 
 
-class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
+
+
+
+class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
     """Robust Soft Learning Vector Quantization
     Parameters
     ----------
@@ -83,7 +85,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
     gradient_descent : string, Gradient Descent describes the used technique
         to perform the gradient descent. Possible values: 'SGD' (default),
         and 'l-bfgs-b'.
-    drift_handling : string, Type of concept drift DETECTION. 
+    drift_handling : string, Type of concept drift DETECTION.
         None means no concept drift detection
         If KS, use of Kolmogorov Smirnov test
         If ADWIN, use of Adaptive Sliding Window dimension wise
@@ -107,7 +109,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                  sigma=1.0, max_iter=2500, gtol=1e-5,
                  display=False, random_state=None,drift_handling = "KS",confidence=0.05,replace = True):
         self.sigma = sigma
-        
+
         self.random_state = random_state
         self.initial_prototypes = initial_prototypes
         self.prototypes_per_class = prototypes_per_class
@@ -153,7 +155,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
             out += math.log(s1 / s2)
         return -out
 
-    def _optimize(self, X, y, random_state):            
+    def _optimize(self, X, y, random_state):
             """Implementation of Stochastical Gradient Descent"""
             n_data, n_dim = X.shape
             nb_prototypes = self.c_w_.size
@@ -172,10 +174,10 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                     else:
                         # Distance prototype from data point
                         self.w_[j] -= c * self._p(j, xi, prototypes=self.w_) * d
-     
+
     def _costf(self, x, w, **kwargs):
-        d = (x - w)[np.newaxis].T 
-        d = d.T.dot(d) 
+        d = (x - w)[np.newaxis].T
+        d = d.T.dot(d)
         return -d / (2 * self.sigma)
 
     def _p(self, j, e, y=None, prototypes=None, **kwargs):
@@ -193,7 +195,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
         o = np.math.exp(
             self._costf(e, prototypes[j], **kwargs) - fs_max) / s
         return o
-    
+
     def get_prototypes(self):
         """Returns the prototypes"""
         return self.w_
@@ -225,7 +227,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
          p(y|x)
         Parameters
         ----------
-        
+
         y: class
             label
         x: array-like, shape = [n_features]
@@ -246,35 +248,35 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                   self.c_w_[i] == y])
         s2 = sum([self._costf(x, w) for w in self.w_])
         return s1 / s2
-    
+
     def get_info(self):
         return 'RSLVQ'
-    
+
     def predict_proba(self, X):
         """ predict_proba
-        
-        Predicts the probability of each sample belonging to each one of the 
+
+        Predicts the probability of each sample belonging to each one of the
         known target_values.
-        
+
         Parameters
         ----------
         X: Numpy.ndarray of shape (n_samples, n_features)
             A matrix of the samples we want to predict.
-        
+
         Returns
         -------
         numpy.ndarray
-            An array of shape (n_samples, n_features), in which each outer entry is 
-            associated with the X entry of the same index. And where the list in 
+            An array of shape (n_samples, n_features), in which each outer entry is
+            associated with the X entry of the same index. And where the list in
             index [i] contains len(self.target_values) elements, each of which represents
             the probability that the i-th sample of X belongs to a certain label.
-        
+
         """
         return 'Not implemented'
-    
+
     def reset(self):
         self.__init__()
-        
+
     def _validate_train_parms(self, train_set, train_lab, classes=None):
         random_state = validation.check_random_state(self.random_state)
         train_set, train_lab = validation.check_X_y(train_set, train_lab)
@@ -311,7 +313,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                     " does not fit the number of classes"
                     "classes=%d"
                     "length=%d" % (nb_classes, nb_ppc.size))
-        
+
         # initialize prototypes
         if self.initial_prototypes is None:
             #self.w_ = np.repeat(np.array([self.geometric_median(train_set[train_lab == l],"minimize") for l in self.classes_]),nb_ppc,axis=0)
@@ -335,7 +337,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
     #
                     self.c_w_[pos:pos + nb_prot] = self.classes_[actClass]
                 pos += nb_prot
-            
+
         else:
             x = validation.check_array(self.initial_prototypes)
             self.w_ = x[:, :-1]
@@ -405,8 +407,8 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
             self.cd_handling(X,y)
             self.cd_detects.append(self.counter)
             #print(self.w_.shape)
-        
-        self._optimize(X, y, random_state)    
+
+        self._optimize(X, y, random_state)
         return self
 
     def save_data(self,X,y,random_state):
@@ -416,7 +418,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
         pd.DataFrame(y).to_csv("Labels.csv")
         self._optimize(X, y, random_state)
         pd.DataFrame(self.w_).to_csv("Prototypes1.csv")
-        pd.DataFrame(self.c_w_).to_csv("Prototype_Labels1.csv")    
+        pd.DataFrame(self.c_w_).to_csv("Prototype_Labels1.csv")
 
     def calcDistances(self,pts,x):
         dists = []
@@ -433,7 +435,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                 self.cdd = [KSWIN(self.confidence) for c in self.classes_]
         self.init_drift_detection = False
         self.drift_detected = False
-        
+
         if self.drift_handling == "DIST":
             try:
                 class_prototypes = [self.w_[self.c_w_==elem] for elem in self.classes_]
@@ -442,39 +444,39 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
                     detector.add_element(d_new)
                     if detector.detected_change():
                          self.drift_detected = True
-            except Exception as e: 
+            except Exception as e:
                 print("Warning: Current Batch does not contain all labels!")
                 #ValueError('zero-size array to reduction operation maximum which has no identity',)
                 # In this batch not every label is present
         else:
-            if not self.init_drift_detection: 
+            if not self.init_drift_detection:
                 for elem,detector in zip(X.T,self.cdd):
                     for e in elem:
                         detector.add_element(e)
                         if detector.detected_change():
                             self.drift_detected = True
-        
-        
+
+
         return self.drift_detected
-   
+
     def cd_handling(self,X,Y):
         if self.replace:
-            labels = np.concatenate([np.repeat(l,self.prototypes_per_class) for l in self.classes_])        
+            labels = np.concatenate([np.repeat(l,self.prototypes_per_class) for l in self.classes_])
             new_prototypes = np.repeat(np.array([self.geometric_median(np.array([detector.window[-30:] for detector in self.cdd]).T)]),len(labels),axis=0)
-            # new_prototypes = np.array([np.mean(np.array([detector.window[-30:] for detector in self.cdd]),axis=1) for l in labels]) 
+            # new_prototypes = np.array([np.mean(np.array([detector.window[-30:] for detector in self.cdd]),axis=1) for l in labels])
             self.w_ = new_prototypes
             self.c_w_ = labels
             if type(self.initial_prototypes) == np.ndarray:
                 self.initial_prototypes = np.append(new_prototypes,labels[:,None],axis=1)
         else:
-            labels = self.classes_  
+            labels = self.classes_
             new_prototypes = np.array([self.geometric_median(X[Y == l],"minimize") for l in labels])
             self.w_ = np.append(self.w_,new_prototypes,axis=0)
             self.c_w_ = np.append(self.c_w_,labels,axis=0)
             self.prototypes_per_class = self.prototypes_per_class + 1
             if type(self.initial_prototypes) == np.ndarray:
-                self.initial_prototypes = np.append(self.initial_prototypes,np.append(new_prototypes,labels[:,None],axis=1),axis=0)    
-    
+                self.initial_prototypes = np.append(self.initial_prototypes,np.append(new_prototypes,labels[:,None],axis=1),axis=0)
+
     def geometric_median(self,points):
         """
     Calculates the geometric median of an array of points.
@@ -503,7 +505,7 @@ class RRSLVQ(ClassifierMixin, StreamModel, BaseEstimator):
 
         optimize_result = minimize(aggregate_distance, centroid, method='COBYLA')
 
-        return optimize_result.x   
+        return optimize_result.x
 
 if __name__ == "__main__":
     #DEMO SCRIPT
@@ -511,17 +513,16 @@ if __name__ == "__main__":
     s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
 
 
-    stream = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=1)   
-    stream.prepare_for_use()
+    stream = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=1)
 
 
-    rrslvq = RRSLVQ(prototypes_per_class=4,drift_handling="KS",sigma=12)    
+    rrslvq = RobustSoftLearningVectorQuantization(prototypes_per_class=4,drift_handling="KS",sigma=12)
     oza = OzaBaggingAdwin(base_estimator=KNN(), n_estimators=2)
 
     pipe = Pipeline([('Classifier', oza)])
-    
-    evaluator = EvaluatePrequential(show_plot=True,max_samples=10000, 
-    restart_stream=True,batch_size=10,metrics=[ 'accuracy', 'kappa', 'kappa_m']) 
+
+    evaluator = EvaluatePrequential(show_plot=True,max_samples=10000,
+    restart_stream=True,batch_size=10,metrics=[ 'accuracy', 'kappa', 'kappa_m'])
 
     evaluator.evaluate(stream=stream, model=[pipe, rrslvq],model_names=["oza","rrslvq"])
-    
+

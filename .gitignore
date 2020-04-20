@@ -1,3 +1,6 @@
 .vscode/*
 .idea/*
 .spyproject
+RRSLVQ.code-workspace
+__pycache__/kswin.cpython-37.pyc
+__pycache__/ReoccuringDriftStream.cpython-37.pyc

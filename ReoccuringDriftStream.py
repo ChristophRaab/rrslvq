@@ -1,3 +1,4 @@
+from scipy.special import expit
 import numpy as np
 from skmultiflow.data.base_stream import Stream
 from skmultiflow.utils import check_random_state
@@ -6,7 +7,7 @@ from skmultiflow.data import ConceptDriftStream
 from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
 from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
 from skmultiflow.data.mixed_generator import MIXEDGenerator
-from skmultiflow.lazy.knn import KNN
+from skmultiflow.lazy import KNN
 
 class ReoccuringDriftStream(Stream):
     """ ConceptDriftStream
@@ -96,12 +97,11 @@ class ReoccuringDriftStream(Stream):
         self._input_stream = stream
         self._drift_stream = drift_stream
         self.n_targets = stream.n_targets
+        self._prepare_for_use()
 
-    def prepare_for_use(self):
+    def _prepare_for_use(self):
         self.random_state = check_random_state(self._original_random_state)
         self.sample_idx = 0
-        self._input_stream.prepare_for_use()
-        self._drift_stream.prepare_for_use()
 
     def n_remaining_samples(self):
         n_samples = self._input_stream.n_remaining_samples() + self._drift_stream.n_remaining_samples()
@@ -137,29 +137,30 @@ class ReoccuringDriftStream(Stream):
         for j in range(batch_size):
             self.sample_idx += 1
             x = -4.0 * float(self.sample_idx - self.position) / float(self.width)
-            
+
             probability_drift = self._methods[self.probability_function](self,x)
-        
+
             if self.position + self.width == self.sample_idx:
                 self.position = self.sample_idx + self.width + self.pause
                 self.probability_function = "inv_sigmoid_prob" if self.probability_function == "sigmoid_prob" else "sigmoid_prob"
 
-                
+
             if self.random_state.rand() > probability_drift:
                 X, y = self._input_stream.next_sample()
             else:
                 X, y = self._drift_stream.next_sample()
-                
+
             self.current_sample_x[j, :] = X
             self.current_sample_y[j, :] = y
 
         return self.current_sample_x, self.current_sample_y.flatten()
 
     def inv_sigmoid_prob(self,x):
-        return (1 - 1.0 / (1.0 + np.exp(x)))
+        return (1 - 1.0 / (1.0 + np.exp((x))))
 
     def sigmoid_prob(self,x):
-        return  1.0 / (1.0 + np.exp(x))
+
+        return  1.0 / (1.0 + np.exp((x)))
 
     def restart(self):
         self.random_state = check_random_state(self._original_random_state)
@@ -182,14 +183,15 @@ class ReoccuringDriftStream(Stream):
         description += 'position: {} - '.format(self.position)
         description += 'width: {} - '.format(self.width)
         return description
-    
+
     _methods = {
     'inv_sigmoid_prob': inv_sigmoid_prob,
     'sigmoid_prob': sigmoid_prob}
 
+
 if __name__ == "__main__":
 
-    
+
     s1 = MIXEDGenerator(classification_function = 1, random_state= 112, balance_classes = False)
     s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
 
@@ -200,7 +202,7 @@ if __name__ == "__main__":
                             alpha=90.0, # angle of change grade 0 - 90
                             position=2000,
                             width=500)
-    
+
     stream.prepare_for_use()
 
     oza = OzaBaggingAdwin(base_estimator=KNN())
@@ -208,7 +210,7 @@ if __name__ == "__main__":
     """3. Setup evaluator"""
     evaluator = EvaluatePrequential(show_plot=True,batch_size=10,
                                     max_samples=5000,
-                                    metrics=['accuracy', 'kappa_t', 'kappa_m', 'kappa'],    
+                                    metrics=['accuracy', 'kappa_t', 'kappa_m', 'kappa'],
                                     output_file=None)
 
     """4. Run evaluator"""

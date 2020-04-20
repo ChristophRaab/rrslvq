@@ -20,7 +20,7 @@ cd_truth[int(n_batches/2)] = 1
 # Ground truth label of reoccurring concept drift streams
 rec_truth = np.zeros(n_batches)
 for idx in range(rec_truth.size):
-    rec_truth[idx] = 1 if (idx*batch_size) % 1000  == 0 and idx != 0 else 0
+    rec_truth[idx] = 1 if (idx*batch_size) % 10  == 0 and idx != 0 else 0
 
 
 
