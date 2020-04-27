@@ -1,6 +1,6 @@
 
 from bix.evaluation.study import Study
-from bix.classifiers.arslvq import ARSLVQ
+from rrslvq import ReactiveRobustSoftLearningVectorQuantization
 import itertools
 import numpy as np
 import pandas as pd

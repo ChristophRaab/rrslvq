@@ -10,7 +10,7 @@ from skmultiflow.data.mixed_generator import MIXEDGenerator
 from skmultiflow.lazy import KNN
 
 class ReoccuringDriftStream(Stream):
-    """ ConceptDriftStream
+    """ Reoccuring Drift Stream[1]_
 
     A stream generator that adds concept drift or change by joining several streams.
     This is done by building a weighted combination of two pure distributions that
@@ -51,6 +51,7 @@ class ReoccuringDriftStream(Stream):
     width: int (Default: 1000)
         Width of concept drift change.
 
+
     Notes
     -----
     An optional way to estimate the width of the transition :math:`w` is based on the angle :math:`\\alpha`:
@@ -58,6 +59,12 @@ class ReoccuringDriftStream(Stream):
     is round-down to the nearest smaller integer. Notice that larger values of :math:`\\alpha` result in smaller
     widths. For :math:`\\alpha>45.0`, the width is smaller than 1 so values are round-up to 1 to avoid
     division by zero errors.
+
+    References
+    ----------
+    Raab, Christoph, Moritz Heusinger, and Frank-Michael Schleif. "Reactive Soft Prototype Computing for
+    frequent reoccurring Concept Drift." Proceedings of the 27. European Symposium on Artificial Neural
+    Networks ESANN. 2019.
 
     """
 

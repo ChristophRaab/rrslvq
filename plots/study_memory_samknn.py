@@ -2,14 +2,14 @@
 from __future__ import division
 
 from joblib import Parallel, delayed
-from bix.data.reoccuringdriftstream import ReoccuringDriftStream
+from reoccuring_drift_stream import ReoccuringDriftStream
 from bix.classifiers.rslvq import RSLVQ
 from skmultiflow.data.mixed_generator import MIXEDGenerator
 from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
-from skmultiflow.lazy.knn import KNN
+from skmultiflow.lazy import KNN
 from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
-from bix.classifiers.arslvq import ARSLVQ
-from bix.data.reoccuringdriftstream import ReoccuringDriftStream
+from rrslvq import ReactiveRobustSoftLearningVectorQuantization
+from reoccuring_drift_stream import ReoccuringDriftStream
 from bix.classifiers.rrslvq import RRSLVQ
 from skmultiflow.trees.hoeffding_adaptive_tree import HAT
 from skmultiflow.lazy.sam_knn import SAMKNN

@@ -1,8 +1,9 @@
+# !/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 from __future__ import division
 
 import math
-import sys
-from random import random as rnd
 
 import numpy as np
 import pandas as pd
@@ -11,54 +12,14 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils import validation
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
-from random import randint
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.optimize import minimize
 from scipy.spatial.distance import cdist
 from kswin import KSWIN
-from ReoccuringDriftStream import ReoccuringDriftStream
-
-from skmultiflow.core.base import ClassifierMixin, BaseSKMObject
-try:
-    from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
-    from skmultiflow.core.pipeline import Pipeline
-
-    from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
-    from skmultiflow.lazy import KNN
-
-    #Abrupt Concept Drift Generators
-    from skmultiflow.data import STAGGERGenerator
-    from skmultiflow.data import MIXEDGenerator
-    from skmultiflow.data import SEAGenerator
-    from skmultiflow.data import SineGenerator
-
-    # Incremental Concept Drift Generators
-    from skmultiflow.data import HyperplaneGenerator
-
-    # No Concept Drift Generators
-    from skmultiflow.data import RandomRBFGenerator
-
-except ImportError:
-    print("Failed to import SciKit-Multiflow!")
+from skmultiflow.drift_detection import ADWIN
 
 
-#!sr/bin/env python3
-#-*- coding: utf-8 -*-
-"""
-Created on Fri Jun 22 09:35:11 2018
+class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimator):
+    """Reactive Robust Soft Learning Vector Quantization
 
-@author: christoph raab
-"""
-
-# original source code from https://github.com/MrNuggelz/sklearn-lvq)
-
-
-
-
-
-class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
-    """Robust Soft Learning Vector Quantization
     Parameters
     ----------
     prototypes_per_class : int or list of int, optional (default=1)
@@ -70,110 +31,140 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
         means. Class label must be placed as last entry of each prototype.
     sigma : float, optional (default=0.5)
         Variance for the distribution.
-    max_iter : int, optional (default=2500)
-        The maximum number of iterations.
-    gtol : float, optional (default=1e-5)
-        Gradient norm must be less than gtol before successful termination
-        of bfgs.
-    display : boolean, optional (default=False)
-        print information about the bfgs steps.
     random_state : int, RandomState instance or None, optional
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
         by `np.random`.
-    gradient_descent : string, Gradient Descent describes the used technique
-        to perform the gradient descent. Possible values: 'SGD' (default),
-        and 'l-bfgs-b'.
-    drift_handling : string, Type of concept drift DETECTION.
+    drift_detector : string, Type of concept drift DETECTION.
         None means no concept drift detection
-        If KS, use of Kolmogorov Smirnov test
-        If ADWIN, use of Adaptive Sliding Window dimension wise
+        If KS, use of Kolmogorov Smirnov test [1]_.
         IF DIST, monitoring class distances to detect outlier.
+        IF ADWIN, use ADWIN detector [1]_.
+    confidence : float, p-Value of Kolmogorov–Smirnov test(default=0.05)
+    gamma : float, Decay Rate for Adadelta (default=0.9)
+    replace : bool, True, replaces the current set of prototypes if concept
+        drift is detected(default=0.05) and False adds a one prototype per class
+        to the prototype set for representing the new concept
+    windoprototype_setsize: float (default=100)
+        Size of the sliding window for the KSWIN drift detector
+    stat_size: float (default=30)
+        Size of the statistic window for the KSWIN drift detector
 
+    Notes
+    -----
+    RSSLVQ (Reactive Robust Soft Learning Vector Quantization) [1]_ is concept
+    drift stream classifier, equiped with the KSWIN drift detector and the
+    momentum based gradient descent to adapt fast to conceptual changes after
+    detection. See documentation for KSWIN in the imported file.
 
     Attributes
     ----------
-    w_ : array-like, shape = [n_prototypes, n_features]
+    prototypes : array-like, shape = [n_prototypes, n_features]
         Prototype vector, where n_prototypes in the number of prototypes and
         n_features is the number of features
-    c_w_ : array-like, shape = [n_prototypes]
-        Prototype classes
-    classes_ : array-like, shape = [n_classes]
+    prototypes_classes : array-like, shape = [n_prototypes]
+        Prototypes classes
+    class_labels : array-like, shape = [n_classes]
         Array containing labels.
-    initial_fit : boolean, indicator for initial fitting. Set to false after
-        first call of fit/partial fit.
+
+    References
+    ----------
+    .. [1] Christoph Raab, Moritz Heusinger, Frank-Michael Schleif, Reactive
+       Soft Prototype Computing for Concept Drift Streams, Neurocomputing, 2020,
+    .. [2] Bifet, Albert, and Ricard Gavalda. "Learning from time-changing data with adaptive windowing."
+       In Proceedings of the 2007 SIAM international conference on data mining, pp. 443-448.
+       Society for Industrial and Applied Mathematics, 2007.
     """
 
     def __init__(self, prototypes_per_class=1, initial_prototypes=None,
-                 sigma=1.0, max_iter=2500, gtol=1e-5,
-                 display=False, random_state=None,drift_handling = "KS",confidence=0.05,replace = True):
+                 sigma=1.0, random_state=112, drift_detector="KS", confidence=0.05,
+                 gamma: float = 0.9, replace: bool = True, windoprototype_setsize=100, stat_size=30,):
         self.sigma = sigma
 
         self.random_state = random_state
         self.initial_prototypes = initial_prototypes
         self.prototypes_per_class = prototypes_per_class
-        self.display = display
-        self.max_iter = max_iter
-        self.gtol = gtol
         self.initial_fit = True
-        self.classes_ = []
+        self.class_labels  = []
+
+        #### Reactive extensions  ####
+        self.confidence = confidence
         self.counter = 0
         self.cd_detects = []
-        self.drift_handling = drift_handling
-        self.drift_detected  = False
+        self.drift_detector = drift_detector
+        self.drift_detected = False
         self.replace = replace
         self.init_drift_detection = True
-        self.some = []
-        self.bg_data = [[],[]]
-        self.confidence = confidence
-        if not isinstance(self.display, bool):
-            raise ValueError("display must be a boolean")
-        if not isinstance(self.max_iter, int) or self.max_iter < 1:
-            raise ValueError("max_iter must be an positive integer")
-        if not isinstance(self.gtol, float) or self.gtol <= 0:
-            raise ValueError("gtol must be a positive float")
+        self.windoprototype_setsize = windoprototype_setsize
+        self.stat_size = stat_size
+        #### Adadelta ####
+        self.decay_rate = gamma
+        self.epsilon = 1e-8
 
+        if self.prototypes_per_class < 1:
+            raise ValueError("Number of prototypes per class must be greater or equal to 1")
 
-    def _optfun(self, variables, training_data, label_equals_prototype):
-        n_data, n_dim = training_data.shape
-        nb_prototypes = self.c_w_.size
-        prototypes = variables.reshape(nb_prototypes, n_dim)
+        if self.drift_detector != "KS" and self.drift_detector != "DIST" and self.drift_detector != "ADWIN":
+            raise ValueError("Drift detector must be either KS, ADWIN or DIST!")
 
-        out = 0
+        if self.confidence <= 0 or self.confidence >= 1:
+            raise ValueError("Confidence of test must be between 0 and 1!")
+
+        if self.sigma < 0:
+            raise ValueError("Sigma must be greater than zero")
+
+    def _optimize(self, x, y, random_state):
+        """Implementation of Adadelta"""
+        n_data, n_dim = x.shape
+        nb_prototypes = self.prototypes_classes.size
+        prototypes = self.prototype_set.reshape(nb_prototypes, n_dim)
 
         for i in range(n_data):
-            xi = training_data[i]
-            y = label_equals_prototype[i]
-            fs = [self._costf(xi, w) for w in prototypes]
-            fs_max = max(fs)
-            s1 = sum([np.math.exp(fs[i] - fs_max) for i in range(len(fs))
-                      if self.c_w_[i] == y])
-            s2 = sum([np.math.exp(f - fs_max) for f in fs])
-            s1 += 0.0000001
-            s2 += 0.0000001
-            out += math.log(s1 / s2)
-        return -out
+            xi = x[i]
+            c_xi = y[i]
+            for j in range(prototypes.shape[0]):
+                d = (xi - prototypes[j])
 
-    def _optimize(self, X, y, random_state):
-            """Implementation of Stochastical Gradient Descent"""
-            n_data, n_dim = X.shape
-            nb_prototypes = self.c_w_.size
-            prototypes = self.w_.reshape(nb_prototypes, n_dim)
+                if self.prototypes_classes[j] == c_xi:
+                    gradient = (self._p(j, xi, prototypes=self.prototype_set, y=c_xi) -
+                                self._p(j, xi, prototypes=self.prototype_set)) * d
+                else:
+                    gradient = - self._p(j, xi, prototypes=self.prototype_set) * d
 
-            for i in range(n_data):
-                xi = X[i]
-                c_xi = y[i]
-                for j in range(prototypes.shape[0]):
-                    d = (xi - prototypes[j])
-                    c = 1/ self.sigma
-                    if self.c_w_[j] == c_xi:
-                        # Attract prototype to data point
-                        self.w_[j] += c * (self._p(j, xi, prototypes=self.w_, y=c_xi) -
-                                     self._p(j, xi, prototypes=self.w_)) * d
-                    else:
-                        # Distance prototype from data point
-                        self.w_[j] -= c * self._p(j, xi, prototypes=self.w_) * d
+                # Accumulate gradient
+                self.squared_mean_gradient[j] = self.decay_rate * self.squared_mean_gradient[j] + \
+                                                (1 - self.decay_rate) * gradient ** 2
+
+                # Compute update/step
+                step = ((self.squared_mean_step[j] + self.epsilon) / \
+                        (self.squared_mean_gradient[j] + self.epsilon)) ** 0.5 * gradient
+
+                # Accumulate updates
+                self.squared_mean_step[j] = self.decay_rate * self.squared_mean_step[j] + \
+                                            (1 - self.decay_rate) * step ** 2
+
+                # Attract/Distract prototype to/from data point
+                self.prototype_set[j] += step
+            #            """Implementation of Stochastical Gradient Descent"""
+
+    #            n_data, n_dim = X.shape
+    #            nb_prototypes = self.prototypes_classes.size
+    #            prototypes = self.prototype_set.reshape(nb_prototypes, n_dim)
+    #
+    #            for i in range(n_data):
+    #                xi = X[i]
+    #                c_xi = y[i]
+    #                for j in range(prototypes.shape[0]):
+    #                    d = (xi - prototypes[j])
+    #                    c = 1/ self.sigma
+    #                    if self.prototypes_classes[j] == c_xi:
+    #                        # Attract prototype to data point
+    #                        self.prototype_set[j] += c * (self._p(j, xi, prototypes=self.prototype_set, y=c_xi) -
+    #                                     self._p(j, xi, prototypes=self.prototype_set)) * d
+    #                    else:
+    #                        # Distance prototype from data point
+    #                        self.prototype_set[j] -= c * self._p(j, xi, prototypes=self.prototype_set) * d
 
     def _costf(self, x, w, **kwargs):
         d = (x - w)[np.newaxis].T
@@ -182,13 +173,13 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
 
     def _p(self, j, e, y=None, prototypes=None, **kwargs):
         if prototypes is None:
-            prototypes = self.w_
+            prototypes = self.prototype_set
         if y is None:
             fs = [self._costf(e, w, **kwargs) for w in prototypes]
         else:
             fs = [self._costf(e, prototypes[i], **kwargs) for i in
                   range(prototypes.shape[0]) if
-                  self.c_w_[i] == y]
+                  self.prototypes_classes[i] == y]
 
         fs_max = max(fs)
         s = sum([np.math.exp(f - fs_max) for f in fs])
@@ -198,8 +189,7 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
 
     def get_prototypes(self):
         """Returns the prototypes"""
-        return self.w_
-
+        return self.prototype_set
 
     def predict(self, x):
         """Predict class membership index for each input sample.
@@ -213,13 +203,7 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
         C : array, shape = (n_samples,)
             Returns predicted values.
         """
-        check_is_fitted(self, ['w_', 'c_w_'])
-        x = validation.check_array(x)
-        if x.shape[1] != self.w_.shape[1]:
-            raise ValueError("X has wrong number of features\n"
-                             "found=%d\n"
-                             "expected=%d" % (self.w_.shape[1], x.shape[1]))
-        return np.array([self.c_w_[np.array([self._costf(xi,p) for p in self.w_]).argmax()] for xi in x])
+        return np.array([self.prototypes_classes[np.array([self._costf(xi, p) for p in self.prototype_set]).argmax()] for xi in x])
 
     def posterior(self, y, x):
         """
@@ -237,16 +221,16 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
         posterior
         :return: posterior
         """
-        check_is_fitted(self, ['w_', 'c_w_'])
+        check_is_fitted(self, ['prototype_set', 'prototypes_classes'])
         x = validation.column_or_1d(x)
-        if y not in self.classes_:
+        if y not in self.class_labels :
             raise ValueError('y must be one of the labels\n'
                              'y=%s\n'
-                             'labels=%s' % (y, self.classes_))
-        s1 = sum([self._costf(x, self.w_[i]) for i in
-                  range(self.w_.shape[0]) if
-                  self.c_w_[i] == y])
-        s2 = sum([self._costf(x, w) for w in self.w_])
+                             'labels=%s' % (y, self.class_labels ))
+        s1 = sum([self._costf(x, self.prototype_set[i]) for i in
+                  range(self.prototype_set.shape[0]) if
+                  self.prototypes_classes[i] == y])
+        s2 = sum([self._costf(x, w) for w in self.prototype_set])
         return s1 / s2
 
     def get_info(self):
@@ -279,23 +263,25 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
 
     def _validate_train_parms(self, train_set, train_lab, classes=None):
         random_state = validation.check_random_state(self.random_state)
-        train_set, train_lab = validation.check_X_y(train_set, train_lab)
+        train_set, train_lab = validation.check_X_y(train_set, train_lab.ravel())
 
-        if(self.initial_fit):
-            if(classes):
-                self.classes_ = np.asarray(classes)
-                self.protos_initialized = np.zeros(self.classes_.size)
+        if (self.initial_fit):
+            if (classes):
+                self.class_labels  = np.asarray(classes)
+                self.protos_initialized = np.zeros(self.class_labels .size)
             else:
-                self.classes_ = unique_labels(train_lab)
-                self.protos_initialized = np.zeros(self.classes_.size)
+                self.class_labels  = unique_labels(train_lab)
+                self.protos_initialized = np.zeros(self.class_labels .size)
 
-        nb_classes = len(self.classes_)
+        nb_classes = len(self.class_labels )
         nb_samples, nb_features = train_set.shape  # nb_samples unused
 
         # set prototypes per class
-        if isinstance(self.prototypes_per_class, int):
+        if isinstance(self.prototypes_per_class, int) or isinstance(self.prototypes_per_class, np.int64):
             if self.prototypes_per_class < 0 or not isinstance(
-                    self.prototypes_per_class, int):
+                    self.prototypes_per_class, int) and not isinstance(
+                self.prototypes_per_class, np.int64):
+                # isinstance(self.prototypes_per_class, np.int64) fixes the singleton array array (1) is ... bug of gridsearch parallel
                 raise ValueError("prototypes_per_class must be a positive int")
             # nb_ppc = number of protos per class
             nb_ppc = np.ones([nb_classes],
@@ -316,44 +302,45 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
 
         # initialize prototypes
         if self.initial_prototypes is None:
-            #self.w_ = np.repeat(np.array([self.geometric_median(train_set[train_lab == l],"minimize") for l in self.classes_]),nb_ppc,axis=0)
-            #self.c_w_ = np.repeat(self.classes_,nb_ppc)
             if self.initial_fit:
-                self.w_ = np.empty([np.sum(nb_ppc), nb_features], dtype=np.double)
-                self.c_w_ = np.empty([nb_ppc.sum()], dtype=self.classes_.dtype)
+                self.prototype_set = np.empty([np.sum(nb_ppc), nb_features], dtype=np.double)
+                self.prototypes_classes = np.empty([nb_ppc.sum()], dtype=self.class_labels .dtype)
             pos = 0
-            for actClass in range(len(self.classes_)):
-                nb_prot = nb_ppc[actClass] # nb_ppc: prototypes per class
-                if(self.protos_initialized[actClass] == 0 and actClass in unique_labels(train_lab)):
+            for actClassIdx in range(len(self.class_labels )):
+                actClass = self.class_labels [actClassIdx]
+                nb_prot = nb_ppc[actClassIdx]  # nb_ppc: prototypes per class
+                if (self.protos_initialized[actClassIdx] == 0 and actClass in unique_labels(train_lab)):
                     mean = np.mean(
-                        train_set[train_lab == self.classes_[actClass], :], 0)
-                    self.w_[pos:pos + nb_prot] = mean + (
+                        train_set[train_lab == actClass, :], 0)
+                    self.prototype_set[pos:pos + nb_prot] = mean + (
                             random_state.rand(nb_prot, nb_features) * 2 - 1)
-                    if math.isnan(self.w_[pos, 0]):
-                        print('null: ', actClass)
-                        self.protos_initialized[actClass] = 0
+                    if math.isnan(self.prototype_set[pos, 0]):
+                        print('Prototype is NaN: ', actClass)
+                        self.protos_initialized[actClassIdx] = 0
                     else:
-                        self.protos_initialized[actClass] = 1
-    #
-                    self.c_w_[pos:pos + nb_prot] = self.classes_[actClass]
-                pos += nb_prot
+                        self.protos_initialized[actClassIdx] = 1
 
+                    self.prototypes_classes[pos:pos + nb_prot] = actClass
+                pos += nb_prot
         else:
             x = validation.check_array(self.initial_prototypes)
-            self.w_ = x[:, :-1]
-            self.c_w_ = x[:, -1]
-            if self.w_.shape != (np.sum(nb_ppc), nb_features):
+            self.prototype_set = x[:, :-1]
+            self.prototypes_classes = x[:, -1]
+            if self.prototype_set.shape != (np.sum(nb_ppc), nb_features):
                 raise ValueError("the initial prototypes have wrong shape\n"
                                  "found=(%d,%d)\n"
                                  "expected=(%d,%d)" % (
-                                     self.w_.shape[0], self.w_.shape[1],
+                                     self.prototype_set.shape[0], self.prototype_set.shape[1],
                                      nb_ppc.sum(), nb_features))
-            if set(self.c_w_) != set(self.classes_):
+            if set(self.prototypes_classes) != set(self.class_labels ):
                 raise ValueError(
                     "prototype labels and test data classes do not match\n"
                     "classes={}\n"
-                    "prototype labels={}\n".format(self.classes_, self.c_w_))
+                    "prototype labels={}\n".format(self.class_labels , self.prototypes_classes))
         if self.initial_fit:
+            # Next two lines are Init for Adadelta/RMSprop
+            self.squared_mean_gradient = np.zeros_like(self.prototype_set)
+            self.squared_mean_step = np.zeros_like(self.prototype_set)
             self.initial_fit = False
 
         return train_set, train_lab, random_state
@@ -377,6 +364,7 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
         if len(np.unique(y)) == 1:
             raise ValueError("fitting " + type(
                 self).__name__ + " with only one class is not possible")
+        # X = preprocessing.scale(X)
         self._optimize(X, y, random_state)
         return self
 
@@ -396,97 +384,98 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
         self
         """
 
-        if unique_labels(y) in self.classes_ or self.initial_fit:
+        if set(unique_labels(y)).issubset(set(self.class_labels )) or self.initial_fit == True:
             X, y, random_state = self._validate_train_parms(
                 X, y, classes=classes)
         else:
-            raise ValueError('Class {} was not learned - please declare all classes in first call of fit/partial_fit'.format(y))
+            raise ValueError(
+                'Class {} was not learned - please declare all classes in first call of fit/partial_fit'.format(y))
 
         self.counter = self.counter + 1
-        if self.drift_handling is not None and self.concept_drift_detection(X,y):
-            self.cd_handling(X,y)
+        if self.drift_detector is not None and self.concept_drift_detection(X, y):
+            self.cd_handling(X, y)
             self.cd_detects.append(self.counter)
-            #print(self.w_.shape)
-
-        self._optimize(X, y, random_state)
+        # X = preprocessing.scale(X)
+        self._optimize(X, y, self.random_state)
         return self
 
-    def save_data(self,X,y,random_state):
-        pd.DataFrame(self.w_).to_csv("Prototypes.csv")
-        pd.DataFrame(self.c_w_).to_csv("Prototype_Labels.csv")
+    def save_data(self, X, y, random_state):
+        pd.DataFrame(self.prototype_set).to_csv("Prototypes.csv")
+        pd.DataFrame(self.prototypes_classes).to_csv("Prototype_Labels.csv")
         pd.DataFrame(X).to_csv("Data.csv")
         pd.DataFrame(y).to_csv("Labels.csv")
         self._optimize(X, y, random_state)
-        pd.DataFrame(self.w_).to_csv("Prototypes1.csv")
-        pd.DataFrame(self.c_w_).to_csv("Prototype_Labels1.csv")
+        pd.DataFrame(self.prototype_set).to_csv("Prototypes1.csv")
+        pd.DataFrame(self.prototypes_classes).to_csv("Prototype_Labels1.csv")
 
-    def calcDistances(self,pts,x):
+    def calcDistances(self, pts, x):
         dists = []
         for p in pts:
             for elem in x:
-                dists.append(np.linalg.norm(p-elem))
+                dists.append(np.linalg.norm(p - elem))
         return np.max(dists)
 
-    def concept_drift_detection(self,X,Y):
+    def concept_drift_detection(self, X, Y):
         if self.init_drift_detection:
-            if self.drift_handling == "KS":
-                self.cdd = [KSWIN(alpha=self.confidence) for elem in X.T]
-            if self.drift_handling == "DIST":
-                self.cdd = [KSWIN(self.confidence) for c in self.classes_]
+            if self.drift_detector == "KS":
+                self.cdd = [KSWIN(alpha=self.confidence, prototype_setsize=self.windoprototype_setsize, stat_size=self.stat_size) for elem in
+                            X.T]
+            if self.drift_detector == "ADWIN":
+                self.cdd = [ADWIN(delta=self.confidence) for elem in X.T]
+            if self.drift_detector == "DIST":
+                self.cdd = [KSWIN(self.confidence, prototype_setsize=self.windoprototype_setsize) for c in self.class_labels ]
         self.init_drift_detection = False
         self.drift_detected = False
 
-        if self.drift_handling == "DIST":
+        if self.drift_detector == "DIST":
             try:
-                class_prototypes = [self.w_[self.c_w_==elem] for elem in self.classes_]
-                new_distances = dict([(c,self.calcDistances(pts,X[Y==c])) for c,pts in zip(self.classes_,class_prototypes)])
-                for (c,d_new), detector in zip(new_distances.items(), self.cdd):
+                class_prototypes = [self.prototype_set[self.prototypes_classes == elem] for elem in self.class_labels ]
+                neprototype_setdistances = dict(
+                    [(c, self.calcDistances(pts, X[Y == c])) for c, pts in zip(self.class_labels , class_prototypes)])
+                for (c, d_new), detector in zip(neprototype_setdistances.items(), self.cdd):
                     detector.add_element(d_new)
                     if detector.detected_change():
-                         self.drift_detected = True
-            except Exception as e:
+                        self.drift_detected = True
+            except Exception:
                 print("Warning: Current Batch does not contain all labels!")
-                #ValueError('zero-size array to reduction operation maximum which has no identity',)
+                # ValueError('zero-size array to reduction operation maximum which has no identity',)
                 # In this batch not every label is present
         else:
             if not self.init_drift_detection:
-                for elem,detector in zip(X.T,self.cdd):
+                for elem, detector in zip(X.T, self.cdd):
                     for e in elem:
                         detector.add_element(e)
                         if detector.detected_change():
                             self.drift_detected = True
 
-
         return self.drift_detected
 
-    def cd_handling(self,X,Y):
+    def cd_handling(self, X, Y):
+        #        print('cd handling')
         if self.replace:
-            labels = np.concatenate([np.repeat(l,self.prototypes_per_class) for l in self.classes_])
-            new_prototypes = np.repeat(np.array([self.geometric_median(np.array([detector.window[-30:] for detector in self.cdd]).T)]),len(labels),axis=0)
-            # new_prototypes = np.array([np.mean(np.array([detector.window[-30:] for detector in self.cdd]),axis=1) for l in labels])
-            self.w_ = new_prototypes
-            self.c_w_ = labels
+            labels = np.concatenate([np.repeat(l, self.prototypes_per_class) for l in self.class_labels ])
+            # neprototype_setprototypes = np.repeat(np.array([self.geometric_median(np.array([detector.window[-30:] for detector in self.cdd]).T)]),len(labels),axis=0)
+            neprototype_setprototypes = np.array(
+                [np.mean(np.array([detector.window[-self.stat_size:] for detector in self.cdd]), axis=1) for l in labels])
+            self.prototype_set = neprototype_setprototypes
+            self.prototypes_classes = labels
             if type(self.initial_prototypes) == np.ndarray:
-                self.initial_prototypes = np.append(new_prototypes,labels[:,None],axis=1)
+                self.initial_prototypes = np.append(neprototype_setprototypes, labels[:, None], axis=1)
         else:
-            labels = self.classes_
-            new_prototypes = np.array([self.geometric_median(X[Y == l],"minimize") for l in labels])
-            self.w_ = np.append(self.w_,new_prototypes,axis=0)
-            self.c_w_ = np.append(self.c_w_,labels,axis=0)
+            labels = self.class_labels
+            neprototype_setprototypes = np.array([self.geometric_median(X[Y == l]) for l in labels])
+            self.prototype_set = np.append(self.prototype_set, neprototype_setprototypes, axis=0)
+            self.prototypes_classes = np.append(self.prototypes_classes, labels, axis=0)
             self.prototypes_per_class = self.prototypes_per_class + 1
             if type(self.initial_prototypes) == np.ndarray:
-                self.initial_prototypes = np.append(self.initial_prototypes,np.append(new_prototypes,labels[:,None],axis=1),axis=0)
+                self.initial_prototypes = np.append(self.initial_prototypes,
+                                                    np.append(neprototype_setprototypes, labels[:, None], axis=1), axis=0)
 
-    def geometric_median(self,points):
+    def geometric_median(self, points):
         """
     Calculates the geometric median of an array of points.
-
-    method specifies which algorithm to use:
-        * 'auto' -- uses a heuristic to pick an algorithm
-        * 'minimize' -- scipy.optimize the sum of distances
-        * 'weiszfeld' -- Weiszfeld's algorithm
-    given by https://github.com/mrwojo/geometric_median/blob/master/geometric_median/geometric_median.py
-    """
+    'minimize' -- scipy.optimize the sum of distances
+        """
 
         points = np.asarray(points)
 
@@ -507,22 +496,4 @@ class RobustSoftLearningVectorQuantization(ClassifierMixin, BaseSKMObject):
 
         return optimize_result.x
 
-if __name__ == "__main__":
-    #DEMO SCRIPT
-    s1 = MIXEDGenerator(classification_function = 1, random_state= 112, balance_classes = False)
-    s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
-
-
-    stream = ReoccuringDriftStream(stream=s1, drift_stream=s2,random_state=None,alpha=90.0, position=2000,width=1)
-
-
-    rrslvq = RobustSoftLearningVectorQuantization(prototypes_per_class=4,drift_handling="KS",sigma=12)
-    oza = OzaBaggingAdwin(base_estimator=KNN(), n_estimators=2)
-
-    pipe = Pipeline([('Classifier', oza)])
-
-    evaluator = EvaluatePrequential(show_plot=True,max_samples=10000,
-    restart_stream=True,batch_size=10,metrics=[ 'accuracy', 'kappa', 'kappa_m'])
-
-    evaluator.evaluate(stream=stream, model=[pipe, rrslvq],model_names=["oza","rrslvq"])
 

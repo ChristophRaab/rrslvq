@@ -1,7 +1,7 @@
 from __future__ import division
 
 
-from bix.data.reoccuringdriftstream import ReoccuringDriftStream
+from reoccuring_drift_stream import ReoccuringDriftStream
 import matplotlib.pyplot as plt
 
 from skmultiflow.data.mixed_generator import MIXEDGenerator
@@ -498,7 +498,7 @@ class ARSLVQ(ClassifierMixin, BaseEstimator):
 
 
 if __name__ == "__main__":
-    
+
     s1 = MIXEDGenerator(classification_function = 1, random_state= 112, balance_classes = False)
     s2 = MIXEDGenerator(classification_function = 0, random_state= 112, balance_classes = False)
 

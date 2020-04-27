@@ -2,11 +2,11 @@ from cd_ht import cdht
 from cd_naive_bayes import cdnb
 from skmultiflow.data.mixed_generator import MIXEDGenerator
 from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential
-from bix.data.reoccuringdriftstream import ReoccuringDriftStream
-from bix.classifiers.arslvq import ARSLVQ
+from reoccuring_drift_stream import ReoccuringDriftStream
+from rrslvq import ReactiveRobustSoftLearningVectorQuantization
 from bix.classifiers.rslvq import RSLVQ
 from bix.classifiers.rrslvq import RRSLVQ
-from skmultiflow.lazy.knn import KNN
+from skmultiflow.lazy import KNN
 from skmultiflow.meta.oza_bagging_adwin import OzaBaggingAdwin
 from skmultiflow.trees.hoeffding_adaptive_tree import HAT
 from skmultiflow.lazy.sam_knn import SAMKNN
@@ -14,11 +14,11 @@ from skmultiflow.meta.adaptive_random_forests import AdaptiveRandomForest
 
 n_prototypes_per_class = 4
 sigma = 6
-arslvq = ARSLVQ(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.05,sigma=sigma)
-# rrslvq = RRSLVQ(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.1,sigma=sigma)
-irslvq = ARSLVQ(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.05,sigma=sigma,replace=False)
-adwin = ARSLVQ(prototypes_per_class=n_prototypes_per_class,drift_detector="ADWIN",confidence=0.05,sigma=sigma,replace=False)
-rslvq = RSLVQ(prototypes_per_class=n_prototypes_per_class,sigma=sigma)
+arslvq = ReactiveRobustSoftLearningVectorQuantization(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.05,sigma=sigma)
+rrslvq = ReactiveRobustSoftLearningVectorQuantization(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.1,sigma=sigma)
+irslvq = ReactiveRobustSoftLearningVectorQuantization(prototypes_per_class=n_prototypes_per_class,drift_detector="KS",confidence=0.05,sigma=sigma,replace=False)
+adwin = ReactiveRobustSoftLearningVectorQuantization(prototypes_per_class=n_prototypes_per_class,drift_detector="ADWIN",confidence=0.05,sigma=sigma,replace=False)
+rslvq = ReactiveRobustSoftLearningVectorQuantization(prototypes_per_class=n_prototypes_per_class,sigma=sigma)
 cls = [arslvq,irslvq,adwin,rslvq]
 detectors = ["ARSLVQ","IRSLVQ","Adwin_RSLVQ","RSLVQ"]
 
