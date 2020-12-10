@@ -1,4 +1,3 @@
-from cd_ht import cdht
 from cd_naive_bayes import cdnb
 from skmultiflow.data.mixed_generator import MIXEDGenerator
 from skmultiflow.evaluation.evaluate_prequential import EvaluatePrequential

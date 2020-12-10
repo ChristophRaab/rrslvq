@@ -13,9 +13,8 @@ from sklearn.utils import validation
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 from scipy.spatial.distance import cdist
-from kswin import KSWIN
+from skmultiflow.drift_detection import KSWIN
 from skmultiflow.drift_detection import ADWIN
-
 
 class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimator):
     """Reactive Robust Soft Learning Vector Quantization

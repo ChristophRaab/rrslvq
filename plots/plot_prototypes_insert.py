@@ -18,7 +18,7 @@ from sklearn.utils import validation
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 
-from bix.detectors.kswin import KSWIN
+from skmultiflow.drift_detection import KSWIN
 
 
 from skmultiflow.data.mixed_generator import MIXEDGenerator

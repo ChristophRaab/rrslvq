@@ -1,6 +1,6 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 from skmultiflow.bayes.naive_bayes import NaiveBayes
-from bix.detectors.kswin import KSWIN
+from skmultiflow.drift_detection import KSWIN
 from skmultiflow.drift_detection.adwin import ADWIN
 from skmultiflow.drift_detection.eddm import  EDDM
 from skmultiflow.drift_detection.ddm import DDM
