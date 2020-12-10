@@ -112,7 +112,7 @@ class KSWIN(BaseDriftDetector):
             self.window = np.delete(self.window,0)
             rnd_window = np.random.choice(self.window[:-self.stat_size], self.stat_size)
 
-            (st, self.p_value) = stats.ks_2samp(rnd_window, self.window[-self.stat_size:],mode="exact")
+            (st, self.p_value) = stats.ks_2samp(rnd_window, self.window[-self.stat_size:],mode="asymp")
 
             if self.p_value <= self.alpha and st > 0.1:
                 self.change_detected = True

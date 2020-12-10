@@ -46,7 +46,7 @@ class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimato
     replace : bool, True, replaces the current set of prototypes if concept
         drift is detected(default=0.05) and False adds a one prototype per class
         to the prototype set for representing the new concept
-    windoprototype_setsize: float (default=100)
+    window_size: float (default=100)
         Size of the sliding window for the KSWIN drift detector
     stat_size: float (default=30)
         Size of the statistic window for the KSWIN drift detector
@@ -79,7 +79,7 @@ class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimato
 
     def __init__(self, prototypes_per_class=1, initial_prototypes=None,
                  sigma=1.0, random_state=112, drift_detector="KS", confidence=0.05,
-                 gamma: float = 0.9, replace: bool = True, windoprototype_setsize=100, stat_size=30,):
+                 gamma: float = 0.9, replace: bool = True, window_size=100, stat_size=30,):
         self.sigma = sigma
 
         self.random_state = random_state
@@ -96,7 +96,7 @@ class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimato
         self.drift_detected = False
         self.replace = replace
         self.init_drift_detection = True
-        self.windoprototype_setsize = windoprototype_setsize
+        self.window_size = window_size
         self.stat_size = stat_size
         #### Adadelta ####
         self.decay_rate = gamma
@@ -418,12 +418,12 @@ class ReactiveRobustSoftLearningVectorQuantization(ClassifierMixin, BaseEstimato
     def concept_drift_detection(self, X, Y):
         if self.init_drift_detection:
             if self.drift_detector == "KS":
-                self.cdd = [KSWIN(alpha=self.confidence, prototype_setsize=self.windoprototype_setsize, stat_size=self.stat_size) for elem in
+                self.cdd = [KSWIN(alpha=self.confidence, window_size=self.window_size, stat_size=self.stat_size) for elem in
                             X.T]
             if self.drift_detector == "ADWIN":
                 self.cdd = [ADWIN(delta=self.confidence) for elem in X.T]
             if self.drift_detector == "DIST":
-                self.cdd = [KSWIN(self.confidence, prototype_setsize=self.windoprototype_setsize) for c in self.class_labels ]
+                self.cdd = [KSWIN(self.confidence, window_size=self.window_size) for c in self.class_labels ]
         self.init_drift_detection = False
         self.drift_detected = False
 
