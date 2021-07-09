@@ -3,7 +3,7 @@
 
 
 from skmultiflow.data import MIXEDGenerator
-from reoccuring_drift_stream import ReoccuringDriftStream
+from study.reoccuring_drift_stream import ReoccuringDriftStream
 from rrslvq import ReactiveRobustSoftLearningVectorQuantization
 from skmultiflow.meta import OzaBaggingAdwin
 from skmultiflow.lazy import KNN

@@ -2,13 +2,13 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from cd_naive_bayes import cdnb
-from bix.evaluation.study import Study
+from study import Study
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 
 # Test settings
-n_batches = 100000
+n_batches = 1000
 batch_size = 10
 start_size = 200
 study_size = 1
@@ -56,7 +56,7 @@ cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
 
 # Testscript
 for i in range(study_size):
-    cls = [cdnb(drift_detector=s) for s in detectors]
+    # cls = [cdnb(drift_detector=s) for s in detectors]
     for j,stream in enumerate(streams):
         print(stream.name + "\n")
 
