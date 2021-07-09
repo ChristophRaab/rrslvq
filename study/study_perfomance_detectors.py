@@ -56,7 +56,7 @@ cd_pred = np.zeros((len(detectors), study_size, len(streams),n_batches))
 
 # Testscript
 for i in range(study_size):
-
+    cls = [cdnb(drift_detector=s) for s in detectors]
     for j,stream in enumerate(streams):
         print(stream.name + "\n")
 
